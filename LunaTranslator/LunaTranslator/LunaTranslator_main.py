@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, io, time, threading, queue
 
 
 def prepareqtenv():
@@ -8,7 +8,7 @@ def prepareqtenv():
     windows.addenvpath("./LunaTranslator/runtime/")
     windows.loadlibrary("./LunaTranslator/runtime/PyQt5/Qt5/bin/Qt5Core.dll")
 
-    from qtsymbols import QApplication, isqt5, Qt, QFont
+    from qtsymbols import QApplication, isqt5, Qt, QFont, QLocale
 
     gobject.overridepathexists()
 
@@ -35,6 +35,8 @@ def prepareqtenv():
     font.setHintingPreference(QFont.HintingPreference.PreferFullHinting)
     # 必须PreferFullHinting，不能PreferNoHinting，否则阿拉伯语显示不出来
     QApplication.setFont(font)
+    QLocale.setDefault(QLocale(QLocale.Language.C, QLocale.Country.AnyCountry))
+    # 香港地区数字乱码
 
 
 def loadmainui():
@@ -43,6 +45,7 @@ def loadmainui():
 
     gobject.baseobject = MAINUI()
     gobject.baseobject.loadui()
+    # gobject.baseobject.urlprotocol()
 
 
 def checklang():
@@ -140,6 +143,7 @@ def checkpermission():
 
     try:
         os.makedirs("userconfig", exist_ok=True)
+        os.makedirs("logs", exist_ok=True)
     except PermissionError:
         msg = QMessageBox()
         msg.setText(_TR("权限不足，请以管理员权限运行！"))
@@ -165,6 +169,70 @@ def switchdir():
         pass
 
 
+class Lockedfile:
+    def __init__(self) -> None:
+        self.collect = queue.Queue()
+        threading.Thread(target=self.__write).start()
+
+    def __write(self):
+        data = self.collect.get()
+        file = open(
+            f"logs/{time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime())}.txt",
+            "w",
+            encoding="utf8",
+            errors="ignore",
+        )
+        while True:
+            file.write(data)
+            file.flush()
+            data = self.collect.get()
+
+    def write(self, data):
+        self.collect.put(data)
+
+
+lockedfile = Lockedfile()
+
+
+class debugoutput(io.IOBase):
+    def __init__(self, file: io.TextIOBase) -> None:
+        super().__init__()
+        self.originfile = file
+
+    def write(self, data):
+        self.originfile.write(data)
+        lockedfile.write(data)
+
+    def flush(self):
+        self.originfile.flush()
+
+
+def savelogs():
+    sys.stderr = debugoutput(sys.stderr)
+    sys.stdout = debugoutput(sys.stdout)
+
+
+def urlprotocol():
+    import argparse
+    from urllib.parse import urlsplit
+    from traceback import print_exc
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--URLProtocol", required=False)
+    args = parser.parse_args()
+    URLProtocol: str = args.URLProtocol
+    try:
+        if URLProtocol:
+            print(URLProtocol)
+            result = urlsplit(URLProtocol)
+            netloc = result.netloc.lower()
+            if netloc == "oauthtoken":
+                token = result.path[1:]
+
+    except:
+        print()
+
+
 if __name__ == "__main__":
     switchdir()
     prepareqtenv()
@@ -175,5 +243,7 @@ if __name__ == "__main__":
     checklang()
     checkintegrity()
     checkpermission()
+    savelogs()
+    # urlprotocol()
     loadmainui()
     app.exit(app.exec())

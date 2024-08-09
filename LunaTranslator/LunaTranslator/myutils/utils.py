@@ -2,7 +2,7 @@ import windows
 import os, time
 import codecs, hashlib, shutil
 import socket, gobject, uuid, subprocess, functools
-import ctypes, importlib
+import ctypes, importlib, json
 import ctypes.wintypes
 from qtsymbols import *
 from traceback import print_exc
@@ -216,38 +216,20 @@ def trysearchforid_1(gameuid, searchargs: list):
                 break
         if not vid:
             continue
-        idname = globalconfig["metadata"][key]["target"]
+        idname = targetmod[key].idname
         savehook_new_data[gameuid][idname] = vid
-        if infoid is None or key == primitivtemetaorigin:
-            infoid = key, vid
-            if key == primitivtemetaorigin:
-                break
-    if infoid:
-        key, vid = infoid
-        dispatchsearchfordata(gameuid, key, vid)
         gobject.baseobject.translation_ui.displayglobaltooltip.emit(
             f"{key}: found {vid}"
         )
+        if infoid is None or key == primitivtemetaorigin:
+            infoid = key, vid
+    if infoid:
+        key, vid = infoid
+        dispatchsearchfordata(gameuid, key, vid)
 
 
 def trysearchforid(gameuid, searchargs: list):
     threading.Thread(target=trysearchforid_1, args=(gameuid, searchargs)).start()
-
-
-def idtypecheck(key, idname, gameuid, vid):
-    if vid == "":
-        return
-
-    try:
-        if globalconfig["metadata"][key].get("idtype", 1) == 0:
-            try:
-                vid = int(vid)
-            except:
-                print(vid)
-                return
-        savehook_new_data[gameuid][idname] = vid
-    except:
-        print_exc()
 
 
 def gamdidchangedtask(key, idname, gameuid):
@@ -267,6 +249,12 @@ def initanewitem(title):
     return uid
 
 
+def duplicateconfig(uidold):
+    uid = f"{time.time()}_{uuid.uuid4()}"
+    savehook_new_data[uid] = json.loads(json.dumps(savehook_new_data[uidold]))
+    return uid
+
+
 def find_or_create_uid(targetlist, gamepath, title=None):
     uids = findgameuidofpath(gamepath, findall=True)
     if len(uids) == 0:
@@ -281,10 +269,15 @@ def find_or_create_uid(targetlist, gamepath, title=None):
         trysearchforid(uid, [title] + guessmaybetitle(gamepath, title))
         return uid
     else:
+        intarget = uids[0]
+        index = len(targetlist)
         for uid in uids:
             if uid in targetlist:
-                return uid
-        return uids[0]
+                thisindex = targetlist.index(uid)
+                if thisindex < index:
+                    index = thisindex
+                    intarget = uid
+        return intarget
 
 
 kanjichs2ja = str.maketrans(static_data["kanjichs2ja"])
@@ -430,63 +423,49 @@ def minmaxmoveobservefunc(self):
     def win_event_callback(
         hWinEventHook, event, hwnd, idObject, idChild, dwEventThread, dwmsEventTime
     ):
+
         try:
             if gobject.baseobject.textsource is None:
                 return
-            if gobject.baseobject.textsource.hwnd == 0:
+            if not gobject.baseobject.textsource.hwnd:
+                return
+            if not gobject.baseobject.textsource.pids:
+                return
+            p_pids = gobject.baseobject.textsource.pids
+            _focusp = windows.GetWindowThreadProcessId(hwnd)
+            if event != windows.EVENT_SYSTEM_FOREGROUND:
+                return
+            if not (globalconfig["keepontop"] and globalconfig["focusnotop"]):
+                return
+            if _focusp == os.getpid():
                 return
 
-            _focusp = windows.GetWindowThreadProcessId(hwnd)
-            if event == windows.EVENT_SYSTEM_FOREGROUND:
-                if globalconfig["keepontop"] and globalconfig["focusnotop"]:
-                    if _focusp == os.getpid():
-                        pass
-                    else:
-                        hwndmagpie = windows.FindWindow(
-                            "Window_Magpie_967EB565-6F73-4E94-AE53-00CC42592A22", None
-                        )
-                        hwndlossless = windows.FindWindow("LosslessScaling", None)
-                        if (
-                            len(gobject.baseobject.textsource.pids) == 0
-                            or _focusp in gobject.baseobject.textsource.pids
-                            or hwnd == hwndmagpie
-                            or hwnd == hwndlossless
-                        ):
-                            gobject.baseobject.translation_ui.thistimenotsetop = False
-                            gobject.baseobject.translation_ui.settop()
-                        else:
-                            gobject.baseobject.translation_ui.thistimenotsetop = True
-                            if gobject.baseobject.translation_ui.istopmost():
-                                gobject.baseobject.translation_ui.canceltop()
-            if _focusp != windows.GetWindowThreadProcessId(
-                gobject.baseobject.textsource.hwnd
+            if windows.FindWindow(
+                "Window_Magpie_967EB565-6F73-4E94-AE53-00CC42592A22", None
             ):
                 return
-
-            rect = windows.GetWindowRect(hwnd)
-            if event == windows.EVENT_SYSTEM_MOVESIZESTART:  #
-                self.lastpos = rect
-            elif event == windows.EVENT_SYSTEM_MOVESIZEEND:  #
-                if globalconfig["movefollow"]:
-                    if self.lastpos:
-                        rate = QApplication.instance().devicePixelRatio()
-                        self.hookfollowsignal.emit(
-                            5,
-                            (
-                                int((rect[0] - self.lastpos[0]) / rate),
-                                int((rect[1] - self.lastpos[1]) / rate),
-                            ),
-                        )
+            if _focusp in p_pids:
+                gobject.baseobject.translation_ui.thistimenotsetop = False
+                gobject.baseobject.translation_ui.settop()
+            else:
+                gobject.baseobject.translation_ui.thistimenotsetop = True
+                gobject.baseobject.translation_ui.canceltop()
+                windows.SetWindowPos(
+                    hwnd,
+                    windows.HWND_TOP,
+                    0,
+                    0,
+                    0,
+                    0,
+                    windows.SWP_NOACTIVATE | windows.SWP_NOSIZE | windows.SWP_NOMOVE,
+                )
 
         except:
             print_exc()
 
     win_event_callback_cfunc = WinEventProcType(win_event_callback)
 
-    eventpairs = (
-        (windows.EVENT_SYSTEM_MOVESIZESTART, windows.EVENT_SYSTEM_MOVESIZEEND),
-        (windows.EVENT_SYSTEM_FOREGROUND, windows.EVENT_SYSTEM_FOREGROUND),
-    )
+    eventpairs = ((windows.EVENT_SYSTEM_FOREGROUND, windows.EVENT_SYSTEM_FOREGROUND),)
 
     def _():
         for pair in eventpairs:
@@ -506,7 +485,8 @@ def minmaxmoveobservefunc(self):
 
 def dynamiclink(text):
     return text.format(
-        main_server=static_data["main_server"], docs_server=static_data["docs_server"]
+        main_server=static_data["main_server"][gobject.serverindex],
+        docs_server=static_data["docs_server"][gobject.serverindex],
     )
 
 
@@ -533,29 +513,35 @@ class autosql(sqlite3.Connection):
 
 
 @tryprint
-def parsemayberegexreplace(dic: dict, res: str):
-    for item in dic:
-        if item["regex"]:
-            res = re.sub(
-                codecs.escape_decode(bytes(item["key"], "utf-8"))[0].decode("utf-8"),
-                codecs.escape_decode(bytes(item["value"], "utf-8"))[0].decode("utf-8"),
-                res,
-            )
-        else:
-            if (
-                res.isascii()
-                and item["key"].isascii()
-                and item["value"].isascii()
-                and (" " not in item["key"])
-            ):  # 目标可能有空格
-                resx = res.split(" ")
-                for i in range(len(resx)):
-                    if resx[i] == item["key"]:
-                        resx[i] = item["value"]
-                res = " ".join(resx)
+def parsemayberegexreplace(lst: list, line: str):
+    for fil in lst:
+        regex = fil.get("regex", False)
+        escape = fil.get("escape", regex)
+        key = fil.get("key", "")
+        value = fil.get("value", "")
+        if key == "":
+            continue
+        if regex:
+            if escape:
+                line = re.sub(
+                    codecs.escape_decode(bytes(key, "utf-8"))[0].decode("utf-8"),
+                    codecs.escape_decode(bytes(value, "utf-8"))[0].decode("utf-8"),
+                    line,
+                )
+
             else:
-                res = res.replace(item["key"], item["value"])
-    return res
+
+                line = re.sub(key, value, line)
+        else:
+            if escape:
+                line = line.replace(
+                    codecs.escape_decode(bytes(key, "utf-8"))[0].decode("utf-8"),
+                    codecs.escape_decode(bytes(value, "utf-8"))[0].decode("utf-8"),
+                )
+            else:
+                line = line.replace(key, value)
+
+    return line
 
 
 def checkpostlangmatch(name):
@@ -577,7 +563,9 @@ def checkpostusing(name):
     return use and checkpostlangmatch(name)
 
 
-def postusewhich(name1, name2):
+def postusewhich(name1):
+    name2 = name1 + "_use"
+    merge = name1 + "_merge"
     for _ in (0,):
         try:
             if not gobject.baseobject.textsource:
@@ -588,6 +576,8 @@ def postusewhich(name1, name2):
             if savehook_new_data[gameuid]["transoptimi_followdefault"]:
                 break
             if savehook_new_data[gameuid][name2]:
+                if savehook_new_data[gameuid][merge]:
+                    return 3
                 return 2
             else:
                 return 0
@@ -621,6 +611,21 @@ loadpostsettingwindowmethod = functools.partial(loadpostsettingwindowmethod_1, T
 loadpostsettingwindowmethod_private = functools.partial(
     loadpostsettingwindowmethod_1, False
 )
+
+
+def loadpostsettingwindowmethod_maybe(name, parent):
+    for _ in (0,):
+        try:
+            if not gobject.baseobject.textsource:
+                break
+            gameuid = gobject.baseobject.textsource.gameuid
+            if not gameuid:
+                break
+            return loadpostsettingwindowmethod_private(name)(parent, gameuid)
+        except:
+            print_exc()
+            break
+    loadpostsettingwindowmethod(name)(parent)
 
 
 class unsupportkey(Exception):

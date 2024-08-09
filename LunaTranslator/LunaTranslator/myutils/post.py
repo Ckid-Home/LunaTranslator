@@ -2,7 +2,13 @@ import re, codecs, inspect
 from traceback import print_exc
 from collections import Counter
 import gobject
-from myutils.utils import checkchaos, checkmd5reloadmodule, LRUCache, getlangsrc
+from myutils.utils import (
+    checkchaos,
+    checkmd5reloadmodule,
+    LRUCache,
+    getlangsrc,
+    parsemayberegexreplace,
+)
 from myutils.config import (
     postprocessconfig,
     globalconfig,
@@ -22,28 +28,34 @@ def dedump(line, args):
 
 
 def _2_f(line, args):
+    if len(line) == 0:
+        return
     keepnodump = args["保持非重复字符"]
     times = args["重复次数(若为1则自动分析去重)"]
 
     if times >= 2:
         guesstimes = times
     else:
-        guesstimes = []
-        t1 = 1
-        for i in range(1, len(line)):
-            if line[i] == line[i - 1]:
-
-                t1 += 1
+        dumptime = Counter()
+        cntx = 1
+        lastc = None
+        for c in list(line) + [0]:
+            if c != lastc:
+                dumptime[cntx] += 1
+                lastc = c
+                cntx = 1
             else:
+                cntx += 1
+        _max = max(dumptime.values())
+        xx = []
+        for _, _2 in dumptime.items():
+            if _2 == _max:
+                xx.append(_)
 
-                guesstimes.append(t1)
-                t1 = 1
-        x = Counter(guesstimes)
-
-        if len(guesstimes) != 0:
-            guesstimes = sorted(x.keys(), key=lambda x1: x[x1])[-1]
-        else:
-            guesstimes = 1
+        guesstimes = sorted(xx)
+        if guesstimes[0] == 1 and len(guesstimes) > 1:
+            guesstimes = guesstimes[1:]
+        guesstimes = guesstimes[0]
     if keepnodump:
         newline = ""
         i = 0
@@ -213,6 +225,11 @@ def _92_f(line):
     return line
 
 
+def stringreplace(line, args):
+    filters = args["internal"]
+    return parsemayberegexreplace(filters, line)
+
+
 def _7_zhuanyi_f(line, args):
     filters = args["替换内容"]
     for fil in filters:
@@ -351,11 +368,11 @@ def POSTSOLVE(line):
         "_6EX": _6_fEX,
         "_91": _91_f,
         "_92": _92_f,
-        "_7": _7_f,
-        "_8": _8_f,
+        "_7": _7_f,  # depracated
+        "_8": _8_f,  # depracated
         "_13": _13_f,
         "_13EX": _13_fEX,
-        "_7_zhuanyi": _7_zhuanyi_f,
+        "_7_zhuanyi": _7_zhuanyi_f,  # depracated
         "_remove_non_shiftjis_char": _remove_non_shiftjis_char,
         "_remove_control": _remove_control,
         "_remove_chaos": _remove_chaos,
@@ -364,6 +381,7 @@ def POSTSOLVE(line):
         "length_threshold": length_threshold,
         "lines_threshold": lines_threshold,
         "_11": _mypostloader,
+        "stringreplace": stringreplace,
     }
     useranklist = globalconfig["postprocess_rank"]
     usedpostprocessconfig = postprocessconfig

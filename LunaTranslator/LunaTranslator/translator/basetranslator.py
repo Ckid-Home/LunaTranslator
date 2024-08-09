@@ -99,7 +99,7 @@ class basetrans(commonbase):
             gobject.baseobject.textgetmethod(
                 "<msg_error_not_refresh>"
                 + globalconfig["fanyi"][self.typename]["name"]
-                + " inittranslator failed : "
+                + " init translator failed : "
                 + str(stringfyerror(e))
             )
             print_exc()
@@ -309,7 +309,7 @@ class basetrans(commonbase):
             try:
                 self._private_init()
             except Exception as e:
-                raise Exception("inittranslator failed : " + str(stringfyerror(e)))
+                raise Exception("init translator failed : " + str(stringfyerror(e)))
         return self.maybecachetranslate(contentraw, contentsolved, is_auto_run)
 
     def _fythread(self):
@@ -342,12 +342,16 @@ class basetrans(commonbase):
                         for _ in optimization_params:
                             if isinstance(_, dict):
                                 _gpt_dict = _.get("gpt_dict", None)
-                                if not _gpt_dict:
+                                if _gpt_dict is None:
                                     continue
                                 gpt_dict = _gpt_dict
 
                         contentsolved = json.dumps(
-                            {"text": contentsolved, "gpt_dict": gpt_dict}
+                            {
+                                "text": contentsolved,
+                                "gpt_dict": gpt_dict,
+                                "contentraw": contentraw,
+                            }
                         )
 
                     func = functools.partial(

@@ -1,6 +1,6 @@
 from translator.basetranslator import basetrans
 import requests
-import json
+import json, zhconv
 
 # OpenAI
 # from openai import OpenAI
@@ -52,8 +52,13 @@ class TS(basetrans):
         gpt_dict_text_list = []
         for gpt in gpt_dict:
             src = gpt["src"]
-            dst = gpt["dst"]
-            info = gpt["info"] if "info" in gpt.keys() else None
+            if self.needzhconv:
+                dst = zhconv.convert(gpt["dst"], "zh-hans")
+                info = zhconv.convert(gpt["info"], "zh-hans") if "info" in gpt.keys() else None
+            else:
+                dst = gpt["dst"]
+                info = gpt["info"] if "info" in gpt.keys() else None
+            
             if info:
                 single = f"{src}->{dst} #{info}"
             else:
@@ -111,7 +116,7 @@ class TS(basetrans):
             content += (
                 "将下面的日文文本根据上述术语表的对应关系和备注翻译成中文：" + query
             )
-            print(content)
+            # print(content)
             messages.append({"role": "user", "content": content})
         return messages
 
@@ -183,16 +188,22 @@ class TS(basetrans):
         for o in output.iter_lines():
             try:
                 res = o.decode("utf-8").strip()[6:]  # .replace("data: ", "")
-                print(res)
-                if res != "":
-                    yield json.loads(res)
+                # print(res)
+                if res == "":
+                    continue
+                res = json.loads(res)
             except:
                 raise Exception(o)
+
+            yield res
 
     def translate(self, query):
         query = json.loads(query)
         gpt_dict = query["gpt_dict"]
+        contentraw = query["contentraw"]
         query = query["text"]
+        if gpt_dict is not None:
+            query = contentraw
         self.checkempty(["API接口地址"])
         self.get_client(self.config["API接口地址"])
         frequency_penalty = float(self.config["frequency_penalty"])
@@ -218,13 +229,13 @@ class TS(basetrans):
 
             if bool(self.config["fix_degeneration"]):
                 cnt = 0
-                print(completion_tokens)
+                # print(completion_tokens)
                 while completion_tokens == int(self.config["max_new_token"]):
                     # detect degeneration, fixing
                     frequency_penalty += 0.1
                     yield "\0"
                     yield "[检测到退化，重试中]"
-                    print("------------------清零------------------")
+                    # print("------------------清零------------------")
                     if bool(self.config["流式输出"]) == True:
                         output = self.send_request_stream(
                             query,
@@ -287,7 +298,7 @@ class TS(basetrans):
                 output_text = ""
                 for o in output:
                     if o["choices"][0]["finish_reason"] == None:
-                        text_partial = o["choices"][0]["delta"]["content"]
+                        text_partial = o["choices"][0]["delta"].get("content", "")
                         output_text += text_partial
                         yield text_partial
                         completion_tokens += 1
@@ -302,12 +313,12 @@ class TS(basetrans):
 
             if bool(self.config["fix_degeneration"]):
                 cnt = 0
-                print(completion_tokens)
+                # print(completion_tokens)
                 while completion_tokens == int(self.config["max_new_token"]):
                     frequency_penalty += 0.1
                     yield "\0"
                     yield "[检测到退化，重试中]"
-                    print("------------------清零------------------")
+                    # print("------------------清零------------------")
                     if bool(self.config["流式输出"]) == True:
                         output = self.send_request_stream(
                             query,

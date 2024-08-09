@@ -1,19 +1,19 @@
 ### 下载
 
-下载64位版 <a href="https://lunatranslator.xyz/Github/LunaTranslator/releases/latest/download/LunaTranslator.zip" target="_blank"><img src="https://img.shields.io/badge/download_64bit-blue"/></a> 下载32位版 <a href="https://lunatranslator.xyz/Github/LunaTranslator/releases/latest/download/LunaTranslator_x86.zip" target="_blank"><img src="https://img.shields.io/badge/download_32bit-blue"/></a> 或从 <a  target="_blank" href="https://lunatranslator.xyz/Github/LunaTranslator/releases" target="_blank"> releases</a> 下载 <a href="https://lunatranslator.xyz/Github/LunaTranslator/releases/latest/download/LunaTranslator.zip" target="_blank">LunaTranslator.zip</a> 或 <a href="https://lunatranslator.xyz/Github/LunaTranslator/releases/latest/download/LunaTranslator_x86.zip" target="_blank">LunaTranslator_x86.zip</a> ，解压到任意目录
+下载64位版 <a href="https://github.com/HIllya51/LunaTranslator/releases/latest/download/LunaTranslator.zip" target="_blank"><img src="https://img.shields.io/badge/download_64bit-blue"/></a> 下载32位版 <a href="https://github.com/HIllya51/LunaTranslator/releases/latest/download/LunaTranslator_x86.zip" target="_blank"><img src="https://img.shields.io/badge/download_32bit-blue"/></a> 或从 <a  target="_blank" href="https://github.com/HIllya51/LunaTranslator/releases" target="_blank"> releases</a> 下载 <a href="https://github.com/HIllya51/LunaTranslator/releases/latest/download/LunaTranslator.zip" target="_blank">LunaTranslator.zip</a> 或 <a href="https://github.com/HIllya51/LunaTranslator/releases/latest/download/LunaTranslator_x86.zip" target="_blank">LunaTranslator_x86.zip</a> ，解压到任意目录
 
 #### 注意
 
 不要下错了下成源代码了！
 
-![img](https://image.lunatranslator.xyz/zh/down.png)
+![img](https://image.lunatranslator.org/zh/down.png)
 
 ### 启动
 
 解压后可以看到下列文件，使用**LunaTranslator.exe**启动即可
 
 
-![img](https://image.lunatranslator.xyz/zh/startup.png)
+![img](https://image.lunatranslator.org/zh/startup.png)
 
 
 **LunaTranslator.exe** 会以普通模式启动 

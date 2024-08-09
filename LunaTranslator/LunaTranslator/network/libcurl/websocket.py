@@ -13,8 +13,7 @@ class WebSocket:
             _t = CURLWS_BINARY
         sent = c_size_t()
         error = curl_ws_send(self.curl, data, len(data), pointer(sent), 0, _t)
-        if error:
-            raise CURLException(error)
+        MaybeRaiseException(error)
 
     def recv(self):
         time.sleep(0.01)
@@ -26,10 +25,10 @@ class WebSocket:
             error = curl_ws_recv(
                 self.curl, buffer, (10240), pointer(rlen), pointer(meta)
             )
-            if error.value == CURLcode.AGAIN:
+            if error == CURLException.AGAIN:
                 time.sleep(0.01)
             elif error:
-                raise CURLException(error)
+                MaybeRaiseException(error)
             else:
                 break
         if meta.contents.flags & CURLWS_TEXT:
@@ -110,5 +109,4 @@ class WebSocket:
         curl_easy_setopt(self.curl, CURLoption.HTTPHEADER, lheaders)
 
         error = curl_easy_perform(self.curl)
-        if error:
-            raise CURLException(error)
+        MaybeRaiseException(error)

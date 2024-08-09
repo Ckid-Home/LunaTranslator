@@ -1,5 +1,5 @@
 from qtsymbols import *
-import os, platform, functools, threading, uuid
+import os, platform, functools, threading, uuid, json
 from traceback import print_exc
 import windows, qtawesome, winsharedutils, gobject
 from webviewpy import (
@@ -91,8 +91,120 @@ class FocusDoubleSpin(QDoubleSpinBox):
 
 
 class TableViewW(QTableView):
+    def __init__(self, *argc) -> None:
+        super().__init__(*argc)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.ContiguousSelection)
+
+    def showmenu(self, info, pos):
+        r = self.currentIndex().row()
+        if r < 0:
+            return
+        menu = QMenu(self)
+        up = LAction("上移")
+        down = LAction("下移")
+        copy = LAction("复制")
+        paste = LAction("粘贴")
+        menu.addAction(up)
+        menu.addAction(down)
+        if info.get("copypaste", True):
+            menu.addAction(copy)
+            menu.addAction(paste)
+        action = menu.exec(self.cursor().pos())
+        if action == up:
+            self.moverank(-1)
+        elif action == down:
+            self.moverank(1)
+        elif action == copy:
+            self.copytable()
+        elif action == paste:
+            self.pastetable()
+
+    def setsimplemenu(self, info=None):
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        if info is None:
+            info = {}
+        self.customContextMenuRequested.connect(functools.partial(self.showmenu, info))
+
+    def insertplainrow(self, row=0):
+        self.model().insertRow(
+            row, [QStandardItem() for _ in range(self.model().columnCount())]
+        )
+
+    def dedumpmodel(self, col):
+
+        rows = self.model().rowCount()
+        dedump = set()
+        needremoves = []
+        for row in range(rows):
+            if isinstance(col, int):
+                k = self.safetext(row, col)
+            elif callable(col):
+                k = col(row)
+            if k == "" or k in dedump:
+                needremoves.append(row)
+                continue
+            dedump.add(k)
+
+        for row in reversed(needremoves):
+            self.model().removeRow(row)
+
+    def removeselectedrows(self):
+        row = self.currentIndex().row()
+        col = self.currentIndex().column()
+        skip = []
+        for index in self.selectedIndexes():
+            if index.row() in skip:
+                continue
+            skip.append(index.row())
+        skip = reversed(sorted(skip))
+
+        for row in skip:
+            self.model().removeRow(row)
+        row = min(row, self.model().rowCount() - 1)
+        self.setCurrentIndex(self.model().index(row, col))
+        return skip
+
+    def moverank(self, dy):
+        curr = self.currentIndex()
+        row, col = curr.row(), curr.column()
+
+        model = self.model()
+        realws = []
+        for _ in range(self.model().columnCount()):
+            w = self.indexWidget(self.model().index(row, _))
+            if w is None:
+                realws.append(None)
+                continue
+            l: QHBoxLayout = w.layout()
+            w = l.takeAt(0).widget()
+            realws.append(w)
+        target = (row + dy) % model.rowCount()
+        model.insertRow(target, model.takeRow(row))
+        self.setCurrentIndex(model.index(target, col))
+        for _ in range(self.model().columnCount()):
+            self.setIndexWidget(self.model().index(target, _), realws[_])
+        return row, target
+
+    def indexWidgetX(self, row_or_index, col=None):
+        if col is None:
+            index: QModelIndex = row_or_index
+        else:
+            index = self.model().index(row_or_index, col)
+        w = self.indexWidget(index)
+        if w is None:
+            return w
+        l: QHBoxLayout = w.layout()
+        return l.itemAt(0).widget()
+
     def setIndexWidget(self, index: QModelIndex, w: QWidget):
-        super().setIndexWidget(index, w)
+        if w is None:
+            return
+        __w = QWidget()
+        __l = QHBoxLayout()
+        __w.setLayout(__l)
+        __l.setContentsMargins(0, 0, 0, 0)
+        __l.addWidget(w)
+        super().setIndexWidget(index, __w)
         if self.rowHeight(index.row()) < w.height():
             self.setRowHeight(index.row(), w.height())
 
@@ -100,6 +212,71 @@ class TableViewW(QTableView):
         m = self.model()
         if isinstance(m, LStandardItemModel):
             m.updatelangtext()
+
+    def getindexwidgetdata(self, index: QModelIndex): ...
+
+    def setindexwidget(self, index, data): ...
+
+    def safetext(self, row_or_index, col=None, mybewidget=False):
+        if col is None:
+            index: QModelIndex = row_or_index
+        else:
+            index = self.model().index(row_or_index, col)
+        if mybewidget:
+            w = self.indexWidget(index)
+            if w is not None:
+                return self.getindexwidgetdata(index)
+
+        _1 = self.model().itemFromIndex(index)
+        _1 = _1.text() if _1 else ""
+
+        return _1
+
+    def copytable(self) -> str:
+        if len(self.selectedIndexes()) <= 1:
+            return winsharedutils.clipboard_set(self.safetext(self.currentIndex()))
+        _data = []
+        minr = minc = 999999999
+        maxr = maxc = 0
+        for index in self.selectedIndexes():
+            minr = min(minr, index.row())
+            minc = min(minc, index.column())
+            maxr = max(maxr, index.row())
+            maxc = max(maxc, index.column())
+            _data.append(self.safetext(index, mybewidget=True))
+        data = {
+            "data": _data,
+            "row": maxr - minr + 1,
+            "col": maxc - minc + 1,
+        }
+        winsharedutils.clipboard_set(json.dumps(data))
+
+    def pastetable(self):
+        string = winsharedutils.clipboard_get()
+        try:
+            js = json.loads(string)
+            current = self.currentIndex()
+            for _ in range(js["row"]):
+                self.insertplainrow(current.row() + 1)
+            for i, data in enumerate(js.get("data", [])):
+                c = current.column() + i % js["col"]
+                if c >= self.model().columnCount():
+                    continue
+                if isinstance(data, str):
+                    self.model().setItem(
+                        current.row() + 1 + i // js["col"], c, QStandardItem(data)
+                    )
+                else:
+                    self.model().setItem(
+                        current.row() + 1 + i // js["col"], c, QStandardItem("")
+                    )
+                    self.setindexwidget(
+                        self.model().index(current.row() + 1 + i // js["col"], c), data
+                    )
+
+        except:
+            print_exc()
+            self.model().itemFromIndex(self.currentIndex()).setText(string)
 
 
 @Singleton_close
@@ -242,6 +419,8 @@ class commonsolveevent(QWidget):
 
 
 def disablecolor(__: QColor):
+    if __.rgb() == 0xFF000000:
+        return Qt.GlobalColor.gray
     __ = QColor(
         max(0, (__.red() - 64)),
         max(
@@ -255,6 +434,7 @@ def disablecolor(__: QColor):
 
 class MySwitch(commonsolveevent):
     clicked = pyqtSignal(bool)
+    clicksignal = pyqtSignal()
 
     def click(self):
         self.setChecked(not self.checked)
@@ -270,7 +450,7 @@ class MySwitch(commonsolveevent):
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.checked = sign
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-
+        self.clicksignal.connect(self.click)
         self.__currv = 0
         if sign:
             self.__currv = 20
@@ -445,6 +625,19 @@ class resizableframeless(saveposwindow):
 
         self._padding = 5
         self.resetflags()
+
+    def isdoingsomething(self):
+        return (
+            self._move_drag
+            or self._corner_drag_youxia
+            or self._bottom_drag
+            or self._top_drag
+            or self._corner_drag_zuoxia
+            or self._right_drag
+            or self._left_drag
+            or self._corner_drag_zuoshang
+            or self._corner_drag_youshang
+        )
 
     def resetflags(self):
         self._move_drag = False
@@ -662,8 +855,8 @@ def callbackwrap(d, k, call, _):
             print_exc()
 
 
-def comboboxcallbackwrap(internallist, d, k, call, _):
-    _ = internallist[_]
+def comboboxcallbackwrap(internal, d, k, call, _):
+    _ = internal[_]
     d[k] = _
 
     if call:
@@ -674,7 +867,7 @@ def comboboxcallbackwrap(internallist, d, k, call, _):
 
 
 def getsimplecombobox(
-    lst, d, k, callback=None, fixedsize=False, internallist=None, static=False
+    lst, d, k, callback=None, fixedsize=False, internal=None, static=False, emit=False
 ):
     if static:
         s = FocusCombo()
@@ -683,30 +876,31 @@ def getsimplecombobox(
         s = LFocusCombo()
     s.addItems(lst)
 
-    if internallist:
-        if (k not in d) or (d[k] not in internallist):
-            d[k] = internallist[0]
-        s.setCurrentIndex(internallist.index(d[k]))
+    if internal:
+        if len(internal):
+            if (k not in d) or (d[k] not in internal):
+                d[k] = internal[0]
+
+            s.setCurrentIndex(internal.index(d[k]))
         s.currentIndexChanged.connect(
-            functools.partial(comboboxcallbackwrap, internallist, d, k, callback)
+            functools.partial(comboboxcallbackwrap, internal, d, k, callback)
         )
     else:
-        if (k not in d) or (d[k] >= len(lst)):
-            d[k] = 0
-        s.setCurrentIndex(d[k])
-        s.currentIndexChanged.connect(functools.partial(callbackwrap, d, k, callback))
+        if len(lst):
+            if (k not in d) or (d[k] >= len(lst)):
+                d[k] = 0
 
+            s.setCurrentIndex(d[k])
+        s.currentIndexChanged.connect(functools.partial(callbackwrap, d, k, callback))
     if fixedsize:
         s.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
     return s
 
 
 def D_getsimplecombobox(
-    lst, d, k, callback=None, fixedsize=False, internallist=None, static=False
+    lst, d, k, callback=None, fixedsize=False, internal=None, static=False
 ):
-    return lambda: getsimplecombobox(
-        lst, d, k, callback, fixedsize, internallist, static
-    )
+    return lambda: getsimplecombobox(lst, d, k, callback, fixedsize, internal, static)
 
 
 def getlineedit(d, key, callback=None, readonly=False):
@@ -1615,11 +1809,12 @@ class listediter(LDialog):
         copy = LAction("复制")
         up = LAction("上移")
         down = LAction("下移")
-        if not self.isrankeditor:
+        if not (self.isrankeditor):
             menu.addAction(remove)
             menu.addAction(copy)
-        menu.addAction(up)
-        menu.addAction(down)
+        if not (self.candidates):
+            menu.addAction(up)
+            menu.addAction(down)
         action = menu.exec(self.hctable.cursor().pos())
 
         if action == remove:
@@ -1636,16 +1831,8 @@ class listediter(LDialog):
             self.moverank(1)
 
     def moverank(self, dy):
-        curr = self.hctable.currentIndex()
-        target = (curr.row() + dy) % self.hcmodel.rowCount()
-        text = self.internalrealname[curr.row()]
-        self.internalrealname.pop(curr.row())
-        self.hcmodel.removeRow(curr.row())
-        self.internalrealname.insert(target, text)
-        if self.namemapfunction:
-            text = self.namemapfunction(text)
-        self.hcmodel.insertRow(target, [QStandardItem(text)])
-        self.hctable.setCurrentIndex(self.hcmodel.index(target, 0))
+        src, tgt = self.hctable.moverank(dy)
+        self.internalrealname.insert(tgt, self.internalrealname.pop(src))
 
     def __init__(
         self,
@@ -1657,9 +1844,11 @@ class listediter(LDialog):
         ispathsedit=None,
         isrankeditor=False,
         namemapfunction=None,
+        candidates=None,
     ) -> None:
         super().__init__(parent)
         self.lst = lst
+        self.candidates = candidates
         self.closecallback = closecallback
         self.ispathsedit = ispathsedit
         self.isrankeditor = isrankeditor
@@ -1674,7 +1863,7 @@ class listediter(LDialog):
                 QHeaderView.ResizeMode.ResizeToContents
             )
             table.horizontalHeader().setStretchLastSection(True)
-            if isrankeditor or (not (ispathsedit is None)):
+            if isrankeditor or (not (ispathsedit is None)) or self.candidates:
                 table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
             table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
             table.setSelectionMode((QAbstractItemView.SelectionMode.SingleSelection))
@@ -1685,6 +1874,9 @@ class listediter(LDialog):
             table.customContextMenuRequested.connect(self.showmenu)
             self.hctable = table
             self.internalrealname = []
+            formLayout = QVBoxLayout()
+            self.setLayout(formLayout)
+            formLayout.addWidget(self.hctable)
             for row, k in enumerate(lst):  # 2
                 try:
                     if namemapfunction:
@@ -1694,13 +1886,28 @@ class listediter(LDialog):
                 self.internalrealname.append(k)
                 if namemapfunction:
                     k = namemapfunction(k)
-                self.hcmodel.insertRow(row, [QStandardItem(k)])
-            formLayout = QVBoxLayout()
-            formLayout.addWidget(self.hctable)
+                item = QStandardItem(k)
+                self.hcmodel.insertRow(row, [item])
+
+                if candidates:
+                    combo = LFocusCombo()
+                    _vis = self.candidates
+                    if self.namemapfunction:
+                        _vis = [self.namemapfunction(_) for _ in _vis]
+                    combo.addItems(_vis)
+                    combo.setCurrentIndex(self.candidates.index(lst[row]))
+                    combo.currentIndexChanged.connect(
+                        functools.partial(self.__changed, item)
+                    )
+                    self.hctable.setIndexWidget(self.hcmodel.index(row, 0), combo)
             if isrankeditor:
                 self.buttons = threebuttons(texts=["上移", "下移"])
                 self.buttons.btn1clicked.connect(functools.partial(self.moverank, -1))
                 self.buttons.btn2clicked.connect(functools.partial(self.moverank, 1))
+            elif self.candidates:
+                self.buttons = threebuttons(texts=["添加行", "删除行"])
+                self.buttons.btn1clicked.connect(self.click1)
+                self.buttons.btn2clicked.connect(self.clicked2)
             else:
                 self.buttons = threebuttons(texts=["添加行", "删除行", "上移", "下移"])
                 self.buttons.btn1clicked.connect(self.click1)
@@ -1709,22 +1916,14 @@ class listediter(LDialog):
                 self.buttons.btn4clicked.connect(functools.partial(self.moverank, 1))
 
             formLayout.addWidget(self.buttons)
-            self.setLayout(formLayout)
             self.resize(600, self.sizeHint().height())
             self.show()
         except:
             print_exc()
 
     def clicked2(self):
-        skip = []
-        for index in self.hctable.selectedIndexes():
-            if index.row() in skip:
-                continue
-            skip.append(index.row())
-        skip = reversed(sorted(skip))
-
+        skip = self.hctable.removeselectedrows()
         for row in skip:
-            self.hcmodel.removeRow(row)
             self.internalrealname.pop(row)
 
     def closeEvent(self, a0: QCloseEvent) -> None:
@@ -1749,12 +1948,25 @@ class listediter(LDialog):
 
     def __cb(self, paths):
         for path in paths:
-            self.internalrealname.insert(0, paths)
+            self.internalrealname.insert(0, path)
             self.hcmodel.insertRow(0, [QStandardItem(path)])
 
-    def click1(self):
+    def __changed(self, item: QStandardItem, idx):
+        self.internalrealname[item.row()] = self.candidates[idx]
 
-        if self.ispathsedit is None:
+    def click1(self):
+        if self.candidates:
+            self.internalrealname.insert(0, self.candidates[0])
+            item = QStandardItem("")
+            self.hcmodel.insertRow(0, [item])
+            combo = LFocusCombo()
+            _vis = self.candidates
+            if self.namemapfunction:
+                _vis = [self.namemapfunction(_) for _ in _vis]
+            combo.addItems(_vis)
+            combo.currentIndexChanged.connect(functools.partial(self.__changed, item))
+            self.hctable.setIndexWidget(self.hcmodel.index(0, 0), combo)
+        elif self.ispathsedit is None:
             self.internalrealname.insert(0, "")
             self.hcmodel.insertRow(0, [QStandardItem("")])
         else:
@@ -1840,8 +2052,10 @@ def getsimplepatheditor(
         e.setReadOnly(True)
         if useiconbutton:
             bu = getIconButton(icon="fa.gear")
+            clear = getIconButton(icon="fa.remove")
         else:
             bu = LPushButton("选择" + ("文件夹" if isdir else "文件"))
+            clear = LPushButton("清除")
         bu.clicked.connect(
             functools.partial(
                 openfiledirectory,
@@ -1853,8 +2067,15 @@ def getsimplepatheditor(
                 callback,
             )
         )
+
+        def __(_cb, _e):
+            _cb("")
+            _e.setText("")
+
+        clear.clicked.connect(functools.partial(__, callback, e))
         lay.addWidget(e)
         lay.addWidget(bu)
+        lay.addWidget(clear)
     return lay
 
 
@@ -1928,3 +2149,77 @@ class statusbutton(QPushButton):
     def setEnabled(self, _):
         super().setEnabled(_)
         self.seticon()
+
+
+class LIconLabel(LLabel):
+    def __init__(self, *argc):
+        super().__init__(*argc)
+        self._icon = QIcon()
+        self._size = QSize()
+
+    def setIcon(self, icon: QIcon):
+        self._icon = icon
+        self.update()
+
+    def setIconSize(self, size: QSize):
+        self._size = size
+        self.update()
+
+    def paintEvent(self, a0: QPaintEvent) -> None:
+
+        painter = QPainter(self)
+        if self._size.isEmpty():
+            size = self.size()
+        else:
+            size = self._size
+        rect = QRect(
+            (self.width() - size.width()) // 2,
+            (self.height() - size.height()) // 2,
+            size.width(),
+            size.height(),
+        )
+        self._icon.paint(
+            painter,
+            rect,
+            Qt.AlignmentFlag.AlignCenter,
+            QIcon.Mode.Normal,
+            QIcon.State.On,
+        )
+
+
+class SplitLine(QFrame):
+    def __init__(self, *argc):
+        super().__init__(*argc)
+        self.setStyleSheet("background-color: gray;")
+        self.setFixedHeight(2)
+
+
+def clearlayout(ll: QLayout):
+    while ll.count():
+        item = ll.takeAt(0)
+        if not item:
+            continue
+        ll.removeItem(item)
+        w = item.widget()
+        if w:
+            w.deleteLater()
+            continue
+        l = item.layout()
+        if l:
+            clearlayout(l)
+            l.deleteLater()
+            continue
+
+
+class FQPlainTextEdit(QPlainTextEdit):
+    def mousePressEvent(self, a0: QMouseEvent) -> None:
+        # 点击浏览器后，无法重新获取焦点。
+        windows.SetFocus(int(self.winId()))
+        return super().mousePressEvent(a0)
+
+
+class FQLineEdit(QLineEdit):
+    def mousePressEvent(self, a0: QMouseEvent) -> None:
+        # 点击浏览器后，无法重新获取焦点。
+        windows.SetFocus(int(self.winId()))
+        return super().mousePressEvent(a0)

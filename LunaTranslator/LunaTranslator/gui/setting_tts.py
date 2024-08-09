@@ -6,7 +6,7 @@ from gui.inputdialog import (
     autoinitdialog_items,
     noundictconfigdialog1,
     autoinitdialog,
-    noundictconfigdialog2,
+    yuyinzhidingsetting,
 )
 from gui.usefulwidget import (
     D_getsimplecombobox,
@@ -19,23 +19,31 @@ from gui.usefulwidget import (
 )
 
 
-def showvoicelist(self, vl, idx):
+def showvoicelist(self, obj):
+
+    if obj is None:
+        try:
+            self.voicecombo.clear()
+        except:
+            pass
+        return
+    vl = obj.voiceshowlist
+    idx = obj.voicelist.index(obj.voice)
     try:
-        self.voicecombo.blockSignals(True)
+
         self.voicecombo.clear()
         self.voicecombo.addItems(vl)
-        if idx >= 0:
-            self.voicecombo.setCurrentIndex(idx)
-        self.voicecombo.blockSignals(False)
+        self.voicecombo.setCurrentIndex(idx)
     except:
         self.voicecombo_cache = vl, idx
 
 
 def changevoice(self, text):
-
-    globalconfig["reader"][gobject.baseobject.reader_usevoice]["voice"] = (
-        gobject.baseobject.reader.voicelist[self.voicecombo.currentIndex()]
-    )
+    if gobject.baseobject.reader is None:
+        return
+    gobject.baseobject.reader.voice = gobject.baseobject.reader.voicelist[
+        self.voicecombo.currentIndex()
+    ]
 
 
 def createvoicecombo(self):
@@ -69,7 +77,9 @@ def getttsgrid(self):
             continue
         if "args" in globalconfig["reader"][name]:
             items = autoinitdialog_items(globalconfig["reader"][name])
-            items[-1]["callback"] = gobject.baseobject.startreader
+            items[-1]["callback"] = functools.partial(
+                gobject.baseobject.startreader, name, True, True
+            )
             _3 = D_getIconButton(
                 callback=functools.partial(
                     autoinitdialog,
@@ -154,7 +164,7 @@ def setTab5lz(self):
                                 static_data["audioengine_vis"],
                                 globalconfig,
                                 "audioengine",
-                                internallist=static_data["audioengine"],
+                                internal=static_data["audioengine"],
                                 static=True,
                             ),
                         ],
@@ -176,7 +186,9 @@ def setTab5lz(self):
                     grid=[
                         [
                             "自动朗读",
-                            D_getsimpleswitch(globalconfig, "autoread"),
+                            D_getsimpleswitch(
+                                globalconfig, "autoread", name="autoread", parent=self
+                            ),
                         ],
                         [
                             "不被打断",
@@ -201,18 +213,15 @@ def setTab5lz(self):
                                     globalconfig,
                                     "read_translator",
                                 ),
-                                4,
+                                0,
                             ),
                         ],
                         [
-                            "语音跳过",
+                            "语音指定",
                             D_getsimpleswitch(globalconfig["ttscommon"], "tts_skip"),
                             D_getIconButton(
-                                callback=lambda: noundictconfigdialog2(
-                                    self,
-                                    globalconfig["ttscommon"]["tts_skip_regex"],
-                                    "语音跳过",
-                                    ["正则", "条件", "内容"],
+                                callback=lambda: yuyinzhidingsetting(
+                                    self, globalconfig["ttscommon"]["tts_skip_regex"]
                                 ),
                                 icon="fa.gear",
                             ),
@@ -225,10 +234,15 @@ def setTab5lz(self):
                                     self,
                                     globalconfig["ttscommon"]["tts_repair_regex"],
                                     "语音修正",
-                                    ["正则", "原文", "替换"],
+                                    ["正则",'转义', "原文", "替换"],
                                 ),
                                 icon="fa.gear",
                             ),
+                            "",
+                            D_getsimpleswitch(
+                                globalconfig["ttscommon"], "tts_repair_use_at_translate"
+                            ),
+                            "作用于翻译",
                         ],
                     ],
                 ),

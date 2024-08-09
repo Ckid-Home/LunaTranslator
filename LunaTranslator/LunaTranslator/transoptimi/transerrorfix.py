@@ -2,6 +2,8 @@ from myutils.config import transerrorfixdictconfig, savehook_new_data
 from myutils.utils import parsemayberegexreplace, postusewhich
 from gui.inputdialog import noundictconfigdialog1
 import gobject
+from myutils.config import uid2gamepath
+from myutils.hwnd import getExeIcon
 
 
 class Process:
@@ -11,7 +13,7 @@ class Process:
             parent_window,
             transerrorfixdictconfig["dict_v2"],
             "翻译结果修正_设置",
-            ["正则", "翻译", "替换"],
+            ["正则",'转义', "翻译", "替换"],
         )
 
     @staticmethod
@@ -20,9 +22,9 @@ class Process:
         noundictconfigdialog1(
             parent_window,
             savehook_new_data[gameuid]["transerrorfix"],
-            "翻译结果修正_设置",
-            ["正则", "翻译", "替换"],
-        )
+            "翻译结果修正_-_" + savehook_new_data[gameuid]["title"],
+            ["正则",'转义', "翻译", "替换"],
+        ).setWindowIcon(getExeIcon(uid2gamepath[gameuid], cache=True))
 
     def process_after(self, res, mp1):
         res = parsemayberegexreplace(self.usewhich(), res)
@@ -30,12 +32,18 @@ class Process:
 
     @property
     def using_X(self):
-        return postusewhich("transerrorfix", "transerrorfix_use") != 0
+        return postusewhich("transerrorfix") != 0
 
     def usewhich(self) -> dict:
-        which = postusewhich("transerrorfix", "transerrorfix_use")
+        which = postusewhich("transerrorfix")
         if which == 1:
             return transerrorfixdictconfig["dict_v2"]
         elif which == 2:
             gameuid = gobject.baseobject.textsource.gameuid
             return savehook_new_data[gameuid]["transerrorfix"]
+        elif which == 3:
+            gameuid = gobject.baseobject.textsource.gameuid
+            return (
+                savehook_new_data[gameuid]["transerrorfix"]
+                + transerrorfixdictconfig["dict_v2"]
+            )

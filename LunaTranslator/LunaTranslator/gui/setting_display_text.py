@@ -13,9 +13,12 @@ from gui.usefulwidget import (
     getQMessageBox,
     D_getspinbox,
     D_getIconButton,
+    clearlayout,
+    getboxlayout,
     D_getcolorbutton,
     getcolorbutton,
     MySwitch,
+    getsimpleswitch,
     D_getsimpleswitch,
     selectcolor,
     listediter,
@@ -23,6 +26,7 @@ from gui.usefulwidget import (
     LFocusCombo,
     FocusDoubleSpin,
     FocusSpin,
+    SplitLine,
 )
 from gui.dynalang import LPushButton, LFormLayout
 
@@ -84,23 +88,6 @@ class extrahtml(saveposwindow):
         self.setCentralWidget(w)
         self.tryload()
         self.show()
-
-
-def clearlayout(ll: QLayout):
-    while ll.count():
-        item = ll.takeAt(0)
-        if not item:
-            continue
-        ll.removeItem(item)
-        w = item.widget()
-        if w:
-            w.deleteLater()
-            continue
-        l = item.layout()
-        if l:
-            clearlayout(l)
-            l.deleteLater()
-            continue
 
 
 def createinternalfontsettings(self, forml: LFormLayout, group, _type):
@@ -180,8 +167,7 @@ def doinstallqweb(self, dd, base):
         zipf.extractall(target)
         bit = ["x86", "x64"][platform.architecture()[0] == "64bit"]
         copytree(f"{target}/{bit}/PyQt5", "LunaTranslator/runtime/PyQt5")
-
-    gobject.baseobject.showtraymessage("", "安装成功")
+    getQMessageBox(self, "成功", "安装成功")
 
 
 def installqwebdialog(self, link):
@@ -245,9 +231,24 @@ def resetgroudswitchcallback(self, group):
     goodfontgroupswitch = LFocusCombo()
     self.seletengeinecombo.lastindex = self.seletengeinecombo.currentIndex()
     if group == "webview" or group == "QWebEngine":
-        _btn = LPushButton("额外的html")
-        self.goodfontsettingsformlayout.addRow(_btn)
+        _btn = LPushButton("编辑")
         _btn.clicked.connect(lambda: extrahtml(self))
+        switch = getsimpleswitch(
+            globalconfig,
+            "useextrahtml",
+            callback=lambda x: [
+                gobject.baseobject.translation_ui.translate_text.textbrowser.loadextra(
+                    0
+                ),
+                _btn.setEnabled(x),
+            ],
+        )
+        _btn.setEnabled(globalconfig["useextrahtml"])
+        self.goodfontsettingsformlayout.addRow(
+            "额外的html",
+            getboxlayout([switch, _btn]),
+        )
+        self.goodfontsettingsformlayout.addRow(SplitLine())
     if group == "QWebEngine":
         group = "webview"
     __form = LFormLayout()
@@ -294,7 +295,7 @@ def _createseletengeinecombo(self):
         visengine,
         globalconfig,
         "rendertext_using",
-        internallist=visengine_internal,
+        internal=visengine_internal,
         callback=functools.partial(resetgroudswitchcallback, self),
         static=True,
     )

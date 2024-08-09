@@ -1,7 +1,8 @@
-from myutils.config import globalconfig, savehook_new_data
+from myutils.config import globalconfig, savehook_new_data, uid2gamepath
 from myutils.utils import postusewhich
 from gui.inputdialog import postconfigdialog_
 import gobject
+from myutils.hwnd import getExeIcon
 
 
 class Process:
@@ -10,7 +11,7 @@ class Process:
         return postconfigdialog_(
             parent_window,
             globalconfig["gptpromptdict"],
-            "专有名词翻译_sakura_gpt_词典",
+            "专有名词翻译_sakura_gpt_词典_设置",
             ["原文", "翻译", "注释"],
             dictkeys=["src", "dst", "info"],
         )
@@ -20,16 +21,20 @@ class Process:
         postconfigdialog_(
             parent_window,
             savehook_new_data[gameuid]["gptpromptdict"],
-            "专有名词翻译_sakura_gpt_词典",
+            "专有名词翻译_sakura_gpt_词典_-_" + savehook_new_data[gameuid]["title"],
             ["原文", "翻译", "注释"],
             dictkeys=["src", "dst", "info"],
-        )
+        ).setWindowIcon(getExeIcon(uid2gamepath[gameuid], cache=True))
 
     def process_before(self, japanese):
 
         gpt_dict = []
+        srcs = set()
         for gpt in self.usewhich():
             src = gpt["src"]
+            if src in srcs:
+                continue
+            srcs.add(src)
             if src not in japanese:
                 continue
             gpt_dict.append(gpt)
@@ -37,12 +42,18 @@ class Process:
 
     @property
     def using_X(self):
-        return postusewhich("gptpromptdict", "gptpromptdict_use") != 0
+        return postusewhich("gptpromptdict") != 0
 
     def usewhich(self) -> dict:
-        which = postusewhich("gptpromptdict", "gptpromptdict_use")
+        which = postusewhich("gptpromptdict")
         if which == 1:
             return globalconfig["gptpromptdict"]
         elif which == 2:
             gameuid = gobject.baseobject.textsource.gameuid
-            return savehook_new_data[gameuid]["gptpromptdict_use"]
+            return savehook_new_data[gameuid]["gptpromptdict"]
+        elif which == 3:
+            gameuid = gobject.baseobject.textsource.gameuid
+            return (
+                savehook_new_data[gameuid]["gptpromptdict"]
+                + globalconfig["gptpromptdict"]
+            )

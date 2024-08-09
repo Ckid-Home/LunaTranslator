@@ -1,4 +1,4 @@
-
+﻿
 #include "PyStand.h"
 
 //---------------------------------------------------------------------
@@ -278,7 +278,7 @@ const auto init_script =
 	L"    sys.stderr = fp\n"
 	L"    attached = False\n"
 #endif
-	L"sys.argv = [os.environ['LUNA_EXE_NAME'] ,sys.argv[0], PYSTAND_SCRIPT] + sys.argv[1:]\n"
+	L"sys.argv = [PYSTAND_SCRIPT] + sys.argv[1:]\n"
 	L"text = open(PYSTAND_SCRIPT, 'rb').read()\n"
 	L"environ = {'__file__': PYSTAND_SCRIPT, '__name__': '__main__'}\n"
 	L"environ['__package__'] = None\n"
@@ -317,6 +317,12 @@ int WINAPI
 WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR args, int show)
 #endif
 {
+	{
+		// 当更新进行时，禁止启动
+		AutoHandle hMutex = CreateMutex(NULL, FALSE, L"LUNA_UPDATER_SINGLE");
+		if (GetLastError() == ERROR_ALREADY_EXISTS)
+			return 0;
+	}
 	auto __handle = AutoHandle(CreateMutexA(&allAccess, FALSE, "LUNA_UPDATER_BLOCK"));
 	PyStand ps(L"LunaTranslator\\runtime");
 	if (ps.DetectScript() != 0)

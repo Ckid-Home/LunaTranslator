@@ -2,11 +2,12 @@ from myutils.config import noundictconfig, savehook_new_data
 import gobject, re, functools
 from qtsymbols import *
 from traceback import print_exc
-import gobject
-from gui.usefulwidget import getQMessageBox, threebuttons, TableViewW
+from gui.usefulwidget import threebuttons, TableViewW
 from myutils.wrapper import Singleton_close
 from myutils.utils import postusewhich
 from gui.dynalang import LDialog, LLabel, LPushButton, LStandardItemModel, LAction
+from myutils.config import uid2gamepath
+from myutils.hwnd import getExeIcon
 
 
 @Singleton_close
@@ -15,55 +16,21 @@ class noundictconfigdialog(LDialog):
         self.button.setFocus()
         self.apply()
 
-    def showmenu(self, table: TableViewW, pos):
-        r = table.currentIndex().row()
-        if r < 0:
-            return
-        menu = QMenu(table)
-        up = LAction("上移")
-        down = LAction("下移")
-        menu.addAction(up)
-        menu.addAction(down)
-        action = menu.exec(table.cursor().pos())
-
-        if action == up:
-
-            self.moverank(table, -1)
-
-        elif action == down:
-            self.moverank(table, 1)
-
-    def moverank(self, table: TableViewW, dy):
-        curr = table.currentIndex()
-        target = (curr.row() + dy) % table.model().rowCount()
-        texts = [
-            table.model().item(curr.row(), i).text()
-            for i in range(table.model().columnCount())
-        ]
-
-        table.model().removeRow(curr.row())
-        table.model().insertRow(target, [QStandardItem(text) for text in texts])
-        table.setCurrentIndex(table.model().index(target, curr.column()))
-
     def apply(self):
         rows = self.model.rowCount()
         self.configdict.clear()
         for row in range(rows):
-            if self.model.item(row, 1).text() == "":
+            _1 = self.table.safetext(row, 1)
+            _2 = self.table.safetext(row, 2)
+            _0 = self.table.safetext(row, 0)
+            if _1 == "":
                 continue
-            if self.model.item(row, 1).text() not in self.configdict:
-                self.configdict[self.model.item(row, 1).text()] = [
-                    self.model.item(row, 0).text(),
-                    self.model.item(row, 2).text(),
-                ]
-            else:
-                self.configdict[self.model.item(row, 1).text()] += [
-                    self.model.item(row, 0).text(),
-                    self.model.item(row, 2).text(),
-                ]
+            if _1 not in self.configdict:
+                self.configdict[_1] = []
+            self.configdict[_1] += [_0, _2]
 
     def __init__(
-        self, parent, configdict, title, label=["游戏ID MD5", "原文", "翻译"], _=None
+        self, parent, configdict, title, label=["游戏ID", "原文", "翻译"], _=None
     ) -> None:
         super().__init__(parent, Qt.WindowType.WindowCloseButtonHint)
 
@@ -90,10 +57,7 @@ class noundictconfigdialog(LDialog):
         table = TableViewW(self)
         table.setModel(model)
         table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        table.customContextMenuRequested.connect(
-            functools.partial(self.showmenu, table)
-        )
+        table.setsimplemenu()
         button = threebuttons(texts=["添加行", "删除行", "上移", "下移", "立即应用"])
         self.table = table
 
@@ -110,43 +74,11 @@ class noundictconfigdialog(LDialog):
                 )
 
         button.btn1clicked.connect(clicked1)
-
-        def clicked2():
-
-            skip = []
-            for index in self.table.selectedIndexes():
-                if index.row() in skip:
-                    continue
-                skip.append(index.row())
-            skip = reversed(sorted(skip))
-
-            for row in skip:
-                model.removeRow(row)
-
-        button.btn2clicked.connect(clicked2)
-        button.btn3clicked.connect(functools.partial(self.moverank, table, -1))
-        button.btn4clicked.connect(functools.partial(self.moverank, table, 1))
+        button.btn2clicked.connect(self.table.removeselectedrows)
+        button.btn3clicked.connect(functools.partial(table.moverank, -1))
+        button.btn4clicked.connect(functools.partial(table.moverank, 1))
 
         button.btn5clicked.connect(self.apply)
-        button2 = threebuttons(texts=["设置所有词条为全局词条", "以当前md5复制选中行"])
-
-        def clicked5():
-            rows = model.rowCount()
-            for row in range(rows):
-                model.item(row, 0).setText("0")
-
-        button2.btn1clicked.connect(
-            lambda: getQMessageBox(
-                self,
-                "警告",
-                "!!!",
-                True,
-                True,
-                lambda: clicked5(),
-            )
-        )
-
-        button2.btn2clicked.connect(self.copysetmd5)
 
         search = QHBoxLayout()
         searchcontent = QLineEdit()
@@ -172,41 +104,18 @@ class noundictconfigdialog(LDialog):
         formLayout.addWidget(table)
         formLayout.addLayout(search)
         formLayout.addWidget(button)
-        formLayout.addWidget(button2)
         setmd5layout = QHBoxLayout()
-        setmd5layout.addWidget(LLabel("当前MD5"))
+        setmd5layout.addWidget(LLabel("当前游戏ID"))
         md5content = QLineEdit(gobject.baseobject.currentmd5)
+        md5content.setReadOnly(True)
         setmd5layout.addWidget(md5content)
-        button5 = LPushButton("修改")
-        button5.clicked.connect(
-            lambda x: gobject.baseobject.__setattr__("currentmd5", md5content.text())
-        )
-        setmd5layout.addWidget(button5)
+
         self.button = button
         self.model = model
         self.configdict = configdict
         formLayout.addLayout(setmd5layout)
         self.resize(QSize(600, 400))
         self.show()
-
-    def copysetmd5(self):
-        if len(self.table.selectedIndexes()) == 0:
-            return
-        md5 = gobject.baseobject.currentmd5
-        row = self.table.selectedIndexes()[0].row()
-        skip = []
-        for index in self.table.selectedIndexes():
-            if index.row() in skip:
-                continue
-            skip.append(index.row())
-            self.model.insertRow(
-                row,
-                [
-                    QStandardItem(md5),
-                    QStandardItem(self.model.item(index.row(), 1).text()),
-                    QStandardItem(self.model.item(index.row(), 2).text()),
-                ],
-            )
 
 
 @Singleton_close
@@ -215,48 +124,15 @@ class noundictconfigdialog_private(LDialog):
         self.button.setFocus()
         self.apply()
 
-    def showmenu(self, table: TableViewW, pos):
-        r = table.currentIndex().row()
-        if r < 0:
-            return
-        menu = QMenu(table)
-        up = LAction("上移")
-        down = LAction("下移")
-        menu.addAction(up)
-        menu.addAction(down)
-        action = menu.exec(table.cursor().pos())
-
-        if action == up:
-
-            self.moverank(table, -1)
-
-        elif action == down:
-            self.moverank(table, 1)
-
-    def moverank(self, table: TableViewW, dy):
-        curr = table.currentIndex()
-        target = (curr.row() + dy) % table.model().rowCount()
-        texts = [
-            table.model().item(curr.row(), i).text()
-            for i in range(table.model().columnCount())
-        ]
-
-        table.model().removeRow(curr.row())
-        table.model().insertRow(target, [QStandardItem(text) for text in texts])
-        table.setCurrentIndex(table.model().index(target, curr.column()))
-
     def apply(self):
+        self.table.dedumpmodel(0)
         rows = self.model.rowCount()
         self.configdict.clear()
-        _dedump = set()
+
         for row in range(rows):
             k, v = self.model.item(row, 0).text(), self.model.item(row, 1).text()
-            if k == "":
-                continue
-            if k in _dedump:
-                continue
+
             self.configdict.append([k, v])
-            _dedump.add(k)
 
     def __init__(
         self, parent, configdict, title, label=["原文", "翻译"], _=None
@@ -280,35 +156,13 @@ class noundictconfigdialog_private(LDialog):
         table = TableViewW(self)
         table.setModel(model)
         table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        table.customContextMenuRequested.connect(
-            functools.partial(self.showmenu, table)
-        )
+        table.setsimplemenu()
         button = threebuttons(texts=["添加行", "删除行", "上移", "下移", "立即应用"])
         self.table = table
-
-        def clicked1():
-
-            model.insertRow(0, [QStandardItem(), QStandardItem()])
-
-        button.btn1clicked.connect(clicked1)
-
-        def clicked2():
-
-            skip = []
-            for index in self.table.selectedIndexes():
-                if index.row() in skip:
-                    continue
-                skip.append(index.row())
-            skip = reversed(sorted(skip))
-
-            for row in skip:
-                model.removeRow(row)
-
-        button.btn2clicked.connect(clicked2)
-        button.btn3clicked.connect(functools.partial(self.moverank, table, -1))
-        button.btn4clicked.connect(functools.partial(self.moverank, table, 1))
-
+        button.btn1clicked.connect(table.insertplainrow)
+        button.btn2clicked.connect(table.removeselectedrows)
+        button.btn3clicked.connect(functools.partial(table.moverank, -1))
+        button.btn4clicked.connect(functools.partial(table.moverank, 1))
         button.btn5clicked.connect(self.apply)
 
         search = QHBoxLayout()
@@ -363,13 +217,11 @@ class Process:
 
     @staticmethod
     def get_setting_window_gameprivate(parent_window, gameuid):
-        return (
-            noundictconfigdialog_private(
-                parent_window,
-                savehook_new_data[gameuid]["noundictconfig"],
-                "专有名词翻译_占位符",
-            ),
-        )
+        return noundictconfigdialog_private(
+            parent_window,
+            savehook_new_data[gameuid]["noundictconfig"],
+            "专有名词翻译_占位符_-_" + savehook_new_data[gameuid]["title"],
+        ).setWindowIcon(getExeIcon(uid2gamepath[gameuid], cache=True))
 
     @staticmethod
     def get_setting_window(parent_window):
@@ -377,21 +229,27 @@ class Process:
             noundictconfigdialog(
                 parent_window,
                 noundictconfig["dict"],
-                "专有名词翻译_游戏ID 0表示全局",
+                "专有名词翻译_占位符_设置",
             ),
         )
 
     @property
     def using_X(self):
-        return postusewhich("noundict", "noundict_use") != 0
+        return postusewhich("noundict") != 0
 
     def usewhich(self) -> dict:
-        which = postusewhich("noundict", "noundict_use")
+        which = postusewhich("noundict")
         if which == 1:
             return 1, noundictconfig["dict"]
         elif which == 2:
             gameuid = gobject.baseobject.textsource.gameuid
             return 2, savehook_new_data[gameuid]["noundictconfig"]
+        elif which == 3:
+            gameuid = gobject.baseobject.textsource.gameuid
+            return 3, [
+                savehook_new_data[gameuid]["noundictconfig"],
+                noundictconfig["dict"],
+            ]
 
     def process_before(self, content):
         def __createfake():
@@ -433,6 +291,32 @@ class Process:
                 xx = __createfake()
                 content = content.replace(k, xx)
                 mp1[xx] = v
+            return content, mp1
+        elif _type == 3:
+            dic1, dic = dic
+            for k, v in dic1:
+
+                xx = __createfake()
+                content = content.replace(k, xx)
+                mp1[xx] = v
+
+            for key in dic:
+                v = None
+                if type(dic[key]) == str:
+                    v = dic[mp1[key]]
+                else:
+                    for i in range(len(dic[key]) // 2):
+                        if dic[key][i * 2] in [
+                            "0",
+                            gobject.baseobject.currentmd5,
+                        ]:
+                            v = dic[key][i * 2 + 1]
+                            break
+
+                if v is not None and key in content:
+                    xx = __createfake()
+                    content = content.replace(key, xx)
+                    mp1[xx] = v
             return content, mp1
 
     def process_after(self, res, mp1):

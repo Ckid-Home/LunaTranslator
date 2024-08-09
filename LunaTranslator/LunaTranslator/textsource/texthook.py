@@ -8,7 +8,7 @@ from winsharedutils import Is64bit
 from myutils.config import globalconfig, savehook_new_data, static_data
 from textsource.textsourcebase import basetext
 from myutils.utils import checkchaos
-from myutils.hwnd import injectdll, test_injectable
+from myutils.hwnd import injectdll, test_injectable, ListProcess
 from myutils.wrapper import threader
 from myutils.utils import getfilemd5
 from traceback import print_exc
@@ -101,19 +101,16 @@ class texthook(basetext):
 
             return __shitdict(savehook_new_data[self.gameuid]["hooksetting_private"])
 
-    def __init__(
-        self,
-        pids,
-        hwnd,
-        gamepath,
-        gameuid,
-        autostarthookcode=None,
-        needinserthookcode=None,
-    ):
-        if autostarthookcode is None:
+    def __init__(self, pids, hwnd, gamepath, gameuid, autostart=False):
+        if autostart:
+            autostarthookcode = savehook_new_data[gameuid]["hook"]
+            needinserthookcode = savehook_new_data[gameuid]["needinserthookcode"]
+            self.injecttimeout = savehook_new_data[gameuid]["inserthooktimeout"] / 1000
+        else:
+            self.injecttimeout = 0
             autostarthookcode = []
-        if needinserthookcode is None:
             needinserthookcode = []
+
         self.keepref = []
         self.newline = Queue()
         self.newline_delaywait = Queue()
@@ -265,7 +262,16 @@ class texthook(basetext):
             )
             injectdll(injectpids, injecter, dll)
 
+    @threader
     def start(self):
+        if self.injecttimeout:
+            time.sleep(self.injecttimeout)
+            if set(self.pids) != set(ListProcess(self.gamepath)):
+                # 部分cef/v8引擎的游戏，会在一段启动时间后，启动子进程用于渲染
+                return self.start()
+
+        if self.ending:
+            return
         try:
             self.start_unsafe()
         except:
@@ -276,7 +282,6 @@ class texthook(basetext):
 
     def onprocconnect(self, pid):
         self.connectedpids.append(pid)
-        time.sleep(savehook_new_data[self.gameuid]["inserthooktimeout"] / 1000)
         for hookcode in self.needinserthookcode:
             self.Luna_InsertHookCode(pid, hookcode)
         self.showgamename()

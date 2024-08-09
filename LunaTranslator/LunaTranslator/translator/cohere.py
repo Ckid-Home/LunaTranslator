@@ -150,7 +150,6 @@ class TS(basetrans):
                     t = json_data["event_type"]
                     if t == "text-generation":
                         msg = json_data["text"]
-                        yield msg
                         message += msg
                     elif t == "stream-end":
                         break
@@ -158,12 +157,13 @@ class TS(basetrans):
                 except:
                     print_exc()
                     raise Exception(response_data)
+                yield msg
 
         else:
             try:
                 message = response.json()["text"]
-                yield message
             except:
                 raise Exception(response.text)
+            yield message
         self.context.append({"role": "USER", "message": query})
         self.context.append({"role": "CHATBOT", "message": message})

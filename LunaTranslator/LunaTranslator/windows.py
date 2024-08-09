@@ -33,6 +33,8 @@ from ctypes.wintypes import (
     HKEY,
     LPDWORD,
     LPBYTE,
+    LPCVOID,
+    LPWSTR,
     WPARAM,
     LPARAM,
     INT,
@@ -87,6 +89,7 @@ SW_MAX = 11
 WS_MINIMIZE = 536870912
 HWND_TOPMOST = -1
 HWND_NOTOPMOST = -2
+HWND_TOP = 0
 SW_HIDE = 0
 SWP_NOACTIVATE = 16
 SWP_NOMOVE = 2
@@ -192,12 +195,8 @@ _kernel32 = windll.Kernel32
 _psapi = windll.Psapi
 _Advapi32 = windll.Advapi32
 
-_SetWindowPlacement = _user32.SetWindowPlacement
-_SetWindowPlacement.argtypes = c_int, POINTER(WINDOWPLACEMENT)
-_GetWindowPlacement = _user32.GetWindowPlacement
-_GetWindowPlacement.argtypes = c_int, POINTER(WINDOWPLACEMENT)
 _GetWindowRect = _user32.GetWindowRect
-_GetWindowRect.argtypes = c_int, POINTER(RECT)
+_GetWindowRect.argtypes = HWND, POINTER(RECT)
 _GetForegroundWindow = _user32.GetForegroundWindow
 _WindowFromPoint = _user32.WindowFromPoint
 _WindowFromPoint.argtypes = (POINT,)
@@ -209,7 +208,8 @@ _GetWindowLong.argtypes = c_int, c_int
 
 _SetWindowLongW = _user32.SetWindowLongW
 _SetWindowLongW.argtypes = c_int, c_int, c_int
-
+BringWindowToTop = _user32.BringWindowToTop
+BringWindowToTop.argtypes = (HWND,)
 _GetDC = _user32.GetDC
 _GetDC.restype = c_void_p
 _ReleaseDC = _user32.ReleaseDC
@@ -427,22 +427,6 @@ def GetClientRect(hwnd):
     return (_rect.left, _rect.top, _rect.right, _rect.bottom)
 
 
-def GetWindowPlacement(hwnd, _simple):
-    _place = WINDOWPLACEMENT()
-    _GetWindowPlacement(hwnd, pointer(_place))
-    if _simple:
-        return (
-            _place.flags,
-            _place.showCmd,
-        )  # 只用的着showCmd，所以就先这样了
-    else:
-        return _place
-
-
-def SetWindowPlacement(hwnd, _place):
-    return _SetWindowPlacement(hwnd, pointer(_place))
-
-
 def ShowWindow(hwnd, nCmdShow):
     return _ShowWindow(hwnd, nCmdShow)
 
@@ -542,19 +526,6 @@ def keybd_event(bVk, bScan, dwFlags, _):
     _keybd_event(bVk, bScan, dwFlags, _)
 
 
-try:
-    _EnumProcesses = _kernel32.EnumProcesses
-except:
-    _EnumProcesses = _psapi.EnumProcesses
-
-
-def EnumProcesses():
-    buf = (c_uint * 1024)()
-    dwneed = c_uint()
-    _EnumProcesses(pointer(buf), sizeof(buf), pointer(dwneed))
-    return list(buf)[: dwneed.value // sizeof(c_uint)]
-
-
 _WaitForSingleObject = _kernel32.WaitForSingleObject
 _WaitForSingleObject.argtypes = c_void_p, c_uint
 
@@ -650,11 +621,8 @@ def CreateMutex(bInitialOwner, lpName, secu=get_SECURITY_ATTRIBUTES()):
     return _CreateMutexW(pointer(secu), bInitialOwner, lpName)
 
 
-_GetLastError = _kernel32.GetLastError
-
-
-def GetLastError():
-    return _GetLastError()
+GetLastError = _kernel32.GetLastError
+GetLastError.restype = DWORD
 
 
 ERROR_ALREADY_EXISTS = 183
@@ -989,3 +957,34 @@ GetWindowLongPtr.restype = c_void_p
 WM_LBUTTONDOWN = 0x0201
 WM_LBUTTONUP = 0x0202
 WM_MOUSEMOVE = 0x0200
+
+FORMAT_MESSAGE_ALLOCATE_BUFFER = 0x100
+FORMAT_MESSAGE_FROM_HMODULE = 0x800
+FORMAT_MESSAGE_FROM_SYSTEM = 0x1000
+FORMAT_MESSAGE_IGNORE_INSERTS = 0x200
+FormatMessageW = _kernel32.FormatMessageW
+FormatMessageW.argtypes = DWORD, LPCVOID, DWORD, DWORD, LPWSTR, DWORD, LPCVOID
+FormatMessageW.restype = c_size_t
+LocalFree = _kernel32.LocalFree
+LocalFree.argtypes = (c_void_p,)
+
+
+def FormatMessage(code, module=None):
+    mess = LPWSTR()
+    flag = (
+        FORMAT_MESSAGE_ALLOCATE_BUFFER
+        | FORMAT_MESSAGE_FROM_SYSTEM
+        | FORMAT_MESSAGE_IGNORE_INSERTS
+    )
+    if module:
+        flag |= FORMAT_MESSAGE_FROM_HMODULE
+
+    length = FormatMessageW(
+        flag, module, code, 0x400, cast(pointer(mess), LPWSTR), 0, None
+    )
+    if mess.value is None:
+        return ""
+    res = mess.value[:length]
+    if length:
+        LocalFree(mess)
+    return res.strip()

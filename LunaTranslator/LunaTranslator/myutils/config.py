@@ -4,6 +4,19 @@ from traceback import print_exc
 from qtsymbols import *
 
 
+def namemapcast(namemap):
+    bettermap = namemap.copy()
+    for k, v in namemap.items():
+        for sp in ["・", " "]:
+            spja = k.split(sp)
+            spen = v.split(" ")
+            if len(spja) == len(spen) and len(spen) > 1:
+                for i in range(len(spja)):
+                    if len(spja[i]) >= 2:
+                        bettermap[spja[i]] = spen[i]
+    return bettermap
+
+
 def tryreadconfig(path, default=None):
     path = os.path.join("userconfig", path)
     try:
@@ -119,18 +132,16 @@ def getdefaultsavehook(title=None):
         # "private_tgtlang_2": 0,
         "follow_default_ankisettings": True,
         # "anki_DeckName":str
-        "localeswitcher": 0,
+        # "localeswitcher": 0,废弃
         "onloadautochangemode2": 0,
         "needinserthookcode": [],
         "embedablehook": [],
         "statistic_playtime": 0,
         "statistic_wordcount": 0,
         "statistic_wordcount_nodump": 0,
-        "leuse": True,
-        "startcmd": '"{exepath}"',
-        "startcmduse": False,
+        # "leuse": True, 废弃
         "hook": [],
-        "inserthooktimeout": 0,
+        "inserthooktimeout": 1000,
         "needinserthookcode": [],
         # "allow_tts_auto_names": "",#->v4
         # "allow_tts_auto_names_v4": [],
@@ -158,20 +169,23 @@ def getdefaultsavehook(title=None):
         "currentmainimage": "",
         "noundictconfig": [],
         "noundict_use": False,
+        "noundict_merge": False,
         "vndbnamemap_use": True,
+        "vndbnamemap_merge": False,
         "transerrorfix_use": False,
+        "transerrorfix_merge": False,
         "transerrorfix": [],
         "gptpromptdict_use": False,
+        "gptpromptdict_merge": False,
         "gptpromptdict": [],
-        "vndbnamemap_modified": False,
         # 元数据
-        "namemap": {},  # 人名翻译映射，vndb独占，用于优化翻译
+        "namemap2": [],
+        # "namemap": {},  # 人名翻译映射，vndb独占，用于优化翻译
         #
-        "vid": 0,
-        "bgmsid": 0,
-        "dlsiteid": "RJ/VJXXXX",
-        "fanzaid": "",
-        "steamid": 0,
+        # "vid": 0,
+        # "bgmsid": 0,
+        # "dlsiteid": "RJ/VJXXXX",
+        # "steamid": 0,
         "title": "",
         # "imagepath": None,  # 封面->imagepath_all[0]
         # "imagepath_much2": [],  # 截图->imagepath_all[1:]
@@ -186,42 +200,131 @@ def getdefaultsavehook(title=None):
     return default
 
 
+needcast = False
+if "xxxcast" not in globalconfig:
+    globalconfig["xxxcast"] = True
+    needcast = True
+
 # fmt: off
 oldlanguage = ["zh","ja","en","ru","es","ko","fr","cht","vi","tr","pl","uk","it","ar","th","bo","de","sv","nl"]
 # fmt: on
 _dfsavehook = getdefaultsavehook("")
-for uid in savehook_new_data:
+for gameconfig in savehook_new_data.values():
     if (
-        ("allow_tts_auto_names_v4" not in savehook_new_data[uid])
-        and ("allow_tts_auto_names" in savehook_new_data[uid])
-        and len(savehook_new_data[uid]["allow_tts_auto_names"])
+        ("allow_tts_auto_names_v4" not in gameconfig)
+        and ("allow_tts_auto_names" in gameconfig)
+        and len(gameconfig["allow_tts_auto_names"])
     ):
-        savehook_new_data[uid]["allow_tts_auto_names_v4"] = savehook_new_data[uid][
+        gameconfig["allow_tts_auto_names_v4"] = gameconfig[
             "allow_tts_auto_names"
         ].split("|")
 
-    if ("allow_tts_auto_names_v4" in savehook_new_data[uid]) and (
-        "tts_skip_regex" not in savehook_new_data[uid]
+    if ("allow_tts_auto_names_v4" in gameconfig) and (
+        "tts_skip_regex" not in gameconfig
     ):
-        savehook_new_data[uid]["tts_skip_regex"] = []
-        for name in savehook_new_data[uid]["allow_tts_auto_names_v4"]:
-            savehook_new_data[uid]["tts_skip_regex"].append(
+        gameconfig["tts_skip_regex"] = []
+        for name in gameconfig["allow_tts_auto_names_v4"]:
+            gameconfig["tts_skip_regex"].append(
                 {"regex": False, "key": name, "condition": 0}
             )
-    if ("private_srclang" in savehook_new_data[uid]) and (
-        "private_srclang_2" not in savehook_new_data[uid]
-    ):
-        savehook_new_data[uid]["private_srclang_2"] = oldlanguage[
-            savehook_new_data[uid]["private_srclang"]
-        ]
-        savehook_new_data[uid]["private_tgtlang_2"] = oldlanguage[
-            savehook_new_data[uid]["private_tgtlang"]
-        ]
+    if ("private_srclang" in gameconfig) and ("private_srclang_2" not in gameconfig):
+        gameconfig["private_srclang_2"] = oldlanguage[gameconfig["private_srclang"]]
+        gameconfig["private_tgtlang_2"] = oldlanguage[gameconfig["private_tgtlang"]]
+
+    if "namemap" in gameconfig:
+        gameconfig["namemap2"] = []
+        for k, v in namemapcast(gameconfig.pop("namemap")).items():
+            gameconfig["namemap2"].append(
+                {"key": k, "value": v, "regex": False, "escape": False}
+            )
+
     for __k, __v in _dfsavehook.items():
-        if __k not in savehook_new_data[uid]:
+        if __k not in gameconfig:
             if isinstance(__v, (list, dict)):
                 __v = __v.copy()
-            savehook_new_data[uid][__k] = __v
+            gameconfig[__k] = __v
+
+    if not gameconfig.get("leuse", True):
+        gameconfig.pop("leuse")
+        gameconfig["launch_method"] = "direct"
+    if needcast:
+        if "save_text_process_info" not in gameconfig:
+            continue
+        if "rank" not in gameconfig["save_text_process_info"]:
+            continue
+        if "postprocessconfig" not in gameconfig["save_text_process_info"]:
+            continue
+        items = []
+        try:
+            ifuse = False
+            for post in gameconfig["save_text_process_info"]["rank"]:
+                # 简单
+                if post == "_7":
+                    ifuse = (
+                        ifuse
+                        or gameconfig["save_text_process_info"]["postprocessconfig"][
+                            "_7"
+                        ]["use"]
+                    )
+                    gameconfig["save_text_process_info"]["postprocessconfig"]["_7"][
+                        "use"
+                    ] = False
+                    for k, v in gameconfig["save_text_process_info"][
+                        "postprocessconfig"
+                    ]["_7"]["args"]["替换内容"].items():
+                        items.append(
+                            {"regex": False, "escape": False, "key": k, "value": v}
+                        )
+                if post == "_7_zhuanyi":
+                    ifuse = (
+                        ifuse
+                        or gameconfig["save_text_process_info"]["postprocessconfig"][
+                            "_7_zhuanyi"
+                        ]["use"]
+                    )
+                    gameconfig["save_text_process_info"]["postprocessconfig"][
+                        "_7_zhuanyi"
+                    ]["use"] = False
+                    for k, v in gameconfig["save_text_process_info"][
+                        "postprocessconfig"
+                    ]["_7_zhuanyi"]["args"]["替换内容"].items():
+                        items.append(
+                            {"regex": False, "escape": True, "key": k, "value": v}
+                        )
+                # 正则
+                if post == "_8":
+                    ifuse = (
+                        ifuse
+                        or gameconfig["save_text_process_info"]["postprocessconfig"][
+                            "_8"
+                        ]["use"]
+                    )
+                    gameconfig["save_text_process_info"]["postprocessconfig"]["_8"][
+                        "use"
+                    ] = False
+                    for k, v in gameconfig["save_text_process_info"][
+                        "postprocessconfig"
+                    ]["_8"]["args"]["替换内容"].items():
+                        items.append(
+                            {"regex": True, "escape": True, "key": k, "value": v}
+                        )
+            if len(items):
+                gameconfig["save_text_process_info"]["rank"].append("stringreplace")
+                gameconfig["save_text_process_info"]["postprocessconfig"][
+                    "stringreplace"
+                ] = {
+                    "args": {"internal": items},
+                    "use": ifuse,
+                    "name": "字符串替换",
+                }
+        except:
+            print_exc()
+if "global_namemap" in globalconfig:
+    globalconfig["global_namemap2"] = []
+    for k, v in namemapcast(globalconfig.pop("global_namemap")).items():
+        globalconfig["global_namemap2"].append(
+            {"key": k, "value": v, "regex": False, "escape": False}
+        )
 
 
 class __uid2gamepath:
@@ -324,7 +427,36 @@ if ocrerrorfix == {}:
         ocrerrorfix = postprocessconfig["_100"]
     else:
         ocrerrorfix = ocrerrorfixdefault
-syncconfig(postprocessconfig, defaultpost, True, 3)
+syncconfig(postprocessconfig, defaultpost, deep=3)
+
+
+if needcast:
+    ifuse = False
+    for post in globalconfig["postprocess_rank"]:
+        # 简单
+        if post == "_7":
+            ifuse = ifuse or postprocessconfig["_7"]["use"]
+            postprocessconfig["_7"]["use"] = False
+            for k, v in postprocessconfig["_7"]["args"]["替换内容"].items():
+                postprocessconfig["stringreplace"]["args"]["internal"].append(
+                    {"regex": False, "escape": False, "key": k, "value": v}
+                )
+        if post == "_7_zhuanyi":
+            ifuse = ifuse or postprocessconfig["_7_zhuanyi"]["use"]
+            postprocessconfig["_7_zhuanyi"]["use"] = False
+            for k, v in postprocessconfig["_7_zhuanyi"]["args"]["替换内容"].items():
+                postprocessconfig["stringreplace"]["args"]["internal"].append(
+                    {"regex": False, "escape": True, "key": k, "value": v}
+                )
+        # 正则
+        if post == "_8":
+            ifuse = ifuse or postprocessconfig["_8"]["use"]
+            postprocessconfig["_8"]["use"] = False
+            for k, v in postprocessconfig["_8"]["args"]["替换内容"].items():
+                postprocessconfig["stringreplace"]["args"]["internal"].append(
+                    {"regex": True, "escape": True, "key": k, "value": v}
+                )
+    postprocessconfig["stringreplace"]["use"] = ifuse
 
 for key in defaultglobalconfig["toolbutton"]["buttons"]:
     if key not in globalconfig["toolbutton"]["rank2"]:

@@ -18,7 +18,7 @@ class Qlabel_c(QLabel):
 
     def mouseReleaseEvent(self, event: QMouseEvent):
         try:
-            if self.geometry().contains(self.parent().mapFromGlobal(QCursor.pos())):
+            if self.rect().contains(event.pos()):
                 try:
                     if self.pr:
                         if event.button() == Qt.MouseButton.RightButton:
@@ -393,6 +393,7 @@ class TextBrowser(QWidget, dataget):
     def _setlineheight_x(self, b1, b2, linetags):
         fh = globalconfig["extra_space"]
         fha, _ = self._getfh(True)
+
         self.extra_height = fha
         if fh < 0:
             self.extra_height = -fh + self.extra_height
@@ -404,7 +405,9 @@ class TextBrowser(QWidget, dataget):
                     continue
                 _fha = fha
                 break
-
+            if i == 0 and _fha:
+                self.textbrowser.move(0, int(fha))
+                self.atback_color.move(0, int(fha))
             b = self.textbrowser.document().findBlockByNumber(i)
             tf = b.blockFormat()
             tf.setTopMargin(_fha)
@@ -643,8 +646,6 @@ class TextBrowser(QWidget, dataget):
 
         fha, fonthira = self._getfh(True)
         fontori_m = self._getfh(False, getfm=True)
-        self.textbrowser.move(0, int(fha))
-        self.atback_color.move(0, int(fha))
 
         self.settextposcursor(pos)
         savetaglabels_idx = 0

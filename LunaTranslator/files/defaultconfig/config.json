@@ -17,6 +17,7 @@
     "read_translator": 0,
     "disappear_delay": 5,
     "network": 1,
+    "useextrahtml": true,
     "network_websocket": 1,
     "webview_textbrowser": false,
     "imagewrapmode": 0,
@@ -241,7 +242,6 @@
             "searchfordatatasks": [],
             "useproxy": false,
             "target": "vid",
-            "idtype": 0,
             "args": {
                 "Token": ""
             }
@@ -261,7 +261,6 @@
             "searchfordatatasks": [],
             "useproxy": true,
             "target": "bgmsid",
-            "idtype": 0,
             "args": {
                 "access-token": ""
             }
@@ -333,6 +332,7 @@
     "fix_translate_rank": false,
     "fix_translate_rank_rank": [],
     "cishuvisrank": [],
+    "ignoredict": [],
     "transoptimi": {
         "noundict": false,
         "gptpromptdict": false,
@@ -499,7 +499,7 @@
         1200,
         600
     ],
-    "global_namemap": {},
+    "global_namemap2": [],
     "settingfontsize": 12,
     "filter_chaos_code": false,
     "accept_encoding": [
@@ -675,16 +675,40 @@
                 "icon": "fa.square",
                 "align": 2
             },
+            "noundict_direct": {
+                "use": false,
+                "tip": "专有名词翻译_直接替换",
+                "icon": "fa.book",
+                "align": 0
+            },
+            "noundict_sakura": {
+                "use": false,
+                "tip": "专有名词翻译_sakura_gpt_词典",
+                "icon": "fa.book",
+                "align": 0
+            },
+            "noundict": {
+                "use": false,
+                "tip": "专有名词翻译_占位符",
+                "icon": "fa.book",
+                "align": 0
+            },
+            "noundict_2": {
+                "use": false,
+                "tip": "专有名词翻译_占位符_2",
+                "icon": "fa.book",
+                "align": 0
+            },
             "fix": {
                 "use": false,
                 "tip": "翻译结果修正",
                 "icon": "fa.won",
                 "align": 0
             },
-            "noundict": {
+            "fix_2": {
                 "use": false,
-                "tip": "专有名词翻译设置",
-                "icon": "fa.book",
+                "tip": "翻译结果修正_2",
+                "icon": "fa.won",
                 "align": 0
             },
             "minmize": {
@@ -707,7 +731,7 @@
             },
             "fullscreen": {
                 "use": true,
-                "tip": "缩放/恢复游戏窗口",
+                "tip": "窗口缩放",
                 "icon": "fa.compress",
                 "icon2": "fa.expand",
                 "align": 2
@@ -957,7 +981,7 @@
             },
             "_20": {
                 "use": false,
-                "name": "缩放/恢复游戏窗口",
+                "name": "窗口缩放",
                 "keystring": ""
             },
             "_21": {
@@ -1009,10 +1033,21 @@
                 "use": false,
                 "name": "画廊_录音",
                 "keystring": ""
+            },
+            "_32": {
+                "use": false,
+                "name": "自动朗读",
+                "keystring": ""
             }
         }
     },
     "reader": {
+        "windowstts": {
+            "use": false,
+            "voice": "",
+            "name": "WindowsTTS",
+            "type": "offline"
+        },
         "huoshantts": {
             "use": false,
             "voice": "",
@@ -1029,12 +1064,6 @@
             "voice": "",
             "name": "有道TTS",
             "useproxy": false
-        },
-        "windowstts": {
-            "use": false,
-            "voice": "",
-            "name": "WindowsTTS",
-            "type": "offline"
         },
         "NeoSpeech": {
             "use": false,
@@ -1064,7 +1093,6 @@
             "name": "VOICEVOX",
             "type": "offline",
             "args": {
-                "path": "",
                 "Port": 50021
             },
             "argstype": {
@@ -1074,11 +1102,6 @@
                     "max": 65535,
                     "step": 1,
                     "name": "端口号"
-                },
-                "path": {
-                    "type": "file",
-                    "name": "路径",
-                    "dir": true
                 }
             }
         },
@@ -1088,35 +1111,14 @@
             "name": "vits-simple-api",
             "type": "offline",
             "args": {
-                "Port": 23456,
-                "preset": "",
-                "整合包_CPU": "{main_server}/Resource/IntegrationPack/vits-simple-api/cpu",
-                "整合包_GPU": "{main_server}/Resource/IntegrationPack/vits-simple-api/gpu"
-            },
-            "argstype": {
-                "Port": {
-                    "type": "intspin",
-                    "min": 1,
-                    "max": 65535,
-                    "step": 1,
-                    "name": "端口号"
-                },
-                "整合包_CPU": {
-                    "type": "label",
-                    "islink": true
-                },
-                "整合包_GPU": {
-                    "type": "label",
-                    "islink": true
-                },
-                "preset": {
-                    "name": "GPT-SOVITS preset"
-                }
+                "URL": "http://127.0.0.1:23456",
+                "voices": "/voice/speakers",
+                "speak": "/voice/{model_lower}?text={text}&id={id}&lang=auto&prompt_lang=auto&format=wav&preset=default"
             }
         },
         "gtts": {
             "use": false,
-            "name": "谷歌",
+            "name": "GoogleTTS",
             "voice": ""
         }
     },
@@ -1365,6 +1367,7 @@
         "rate": 1.0,
         "volume": 100.0,
         "tts_repair": false,
+        "tts_repair_use_at_translate": false,
         "tts_repair_regex": [],
         "tts_skip": false,
         "tts_skip_regex": []
@@ -1381,7 +1384,7 @@
             "use": true
         }
     },
-    "verticalocr": false,
+    "verticalocr": 2,
     "ocrmergelines": true,
     "ocr": {
         "local": {
@@ -1494,7 +1497,7 @@
         "baidu_ai": {
             "use": false,
             "color": "#ff65db",
-            "name": "百度_ai"
+            "name": "百度_ait"
         },
         "bing": {
             "use": false,
@@ -1602,6 +1605,13 @@
             "color": "blue",
             "type": "dev",
             "name": "deepseek",
+            "is_gpt_like": true
+        },
+        "dev_chatgpt_mirror": {
+            "use": false,
+            "color": "blue",
+            "type": "dev",
+            "name": "chatgpt mirror",
             "is_gpt_like": true
         },
         "deepl_dev": {
@@ -1921,6 +1931,11 @@
             "type": "pre",
             "color": "blue",
             "name": "实时编辑"
+        },
+        "chatmiko": {
+            "use": false,
+            "color": "blue",
+            "name": "chatmiko"
         }
     },
     "ZoomFactor": 1,

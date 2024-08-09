@@ -112,15 +112,16 @@ class TS(basetrans):
                             break
                         elif json_data["type"] == "content_block_delta":
                             msg = json_data["delta"]["text"]
-                            yield msg
                             message += msg
                         elif json_data["type"] == "content_block_start":
                             msg = json_data["content_block"]["text"]
-                            yield msg
                             message += msg
+                        else:
+                            continue
                     except:
                         print_exc()
                         raise Exception(response_data)
+                    yield msg
 
         else:
             # https://docs.anthropic.com/claude/reference/messages_post
@@ -128,8 +129,8 @@ class TS(basetrans):
                 message = (
                     response.json()["content"][0]["text"].replace("\n\n", "\n").strip()
                 )
-                yield message
             except:
                 raise Exception(response.text)
+            yield message
         self.context.append({"role": "user", "content": query})
         self.context.append({"role": "assistant", "content": message})

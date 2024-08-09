@@ -1,7 +1,75 @@
-import os, sys, re
+import os, sys, re, json
 import shutil, json
 import subprocess, time
 import urllib.request
+from urllib.parse import urljoin
+
+rootDir = os.path.dirname(__file__)
+if sys.argv[1] == "loadversion":
+    os.chdir(rootDir)
+    with open("plugins/CMakeLists.txt", "r", encoding="utf8") as ff:
+        pattern = r"set\(VERSION_MAJOR\s*(\d+)\s*\)\nset\(VERSION_MINOR\s*(\d+)\s*\)\nset\(VERSION_PATCH\s*(\d+)\s*\)"
+        match = re.findall(pattern, ff.read())[0]
+        version_major, version_minor, version_patch = match
+        versionstring = f"v{version_major}.{version_minor}.{version_patch}"
+        print("version=" + versionstring)
+        exit()
+# 继github被封后，域名又被封了。真是走了狗屎运了。这个世界上到底还有什么是能信任的。
+# 暂时先这样吧。在软件内使用重定向链接，因为链接失效没办法及时更新；在github网站或文档内，用直链。
+with open(
+    "LunaTranslator/files/defaultconfig/static_data.json", "r", encoding="utf8"
+) as ff:
+    data = json.loads(ff.read())
+hostservers = data["main_server"]
+print(hostservers)
+hostserver = None
+
+for _hostserver in hostservers:
+    try:
+        urllib.request.urlopen(_hostserver)
+        hostserver = _hostserver
+        break
+    except:
+        pass
+print(hostserver)
+links302 = {
+    "Github": {
+        "LunaTranslator": "HIllya51/LunaTranslator",
+        "LunaHook": "HIllya51/LunaHook",
+    },
+    "Resource": {
+        "ocr_models": {
+            "ja.zip": "https://github.com/test123456654321/RESOURCES/releases/download/ocr_models/ja.zip",
+        },
+        "build_req": {
+            "mecab.zip": "https://github.com/HIllya51/RESOURCES/releases/download/common/mecab.zip",
+            "ocr.zip": "https://github.com/HIllya51/RESOURCES/releases/download/common/ocr.zip",
+            "magpie.zip": "https://github.com/HIllya51/RESOURCES/releases/download/common/magpie.zip",
+            "stylesheets-main.zip": "https://github.com/HIllya51/RESOURCES/releases/download/common/stylesheets-main.zip",
+            "zstd.zip": "https://github.com/HIllya51/RESOURCES/releases/download/common/zstd.zip",
+        },
+    },
+}
+
+
+def _dynalink(path: str):
+    if hostserver:
+        return urljoin(hostserver, path)
+    pathx = path.split("/")
+    if pathx[0] == "Github":
+        return (
+            "https://github.com/"
+            + links302.get(pathx[0]).get(pathx[1])
+            + "/"
+            + "/".join(pathx[2:])
+        )
+    return links302.get(pathx[0]).get(pathx[1]).get(pathx[2])
+
+
+def dynalink(path):
+    _ = _dynalink(path)
+    print(_)
+    return _
 
 
 pluginDirs = ["DLL32", "DLL64", "Locale_Remulator", "LunaHook", "Magpie", "NTLEAS"]
@@ -22,19 +90,14 @@ curlFile64 = "https://curl.se/windows/dl-8.8.0_3/curl-8.8.0_3-win64-mingw.zip"
 curlFileName64 = "curl-8.8.0_3-win64-mingw.zip"
 
 
-ocrModelUrl = (
-    "https://lunatranslator.xyz/Resource/ocr_models"
-)
+ocrModelUrl = dynalink("Resource/ocr_models/ja.zip")
 availableLocales = ["cht", "en", "ja", "ko", "ru", "zh"]
 
-LunaHook_latest = "https://lunatranslator.xyz/Github/LunaHook/releases/latest/download/Release_English.zip"
+LunaHook_latest = dynalink(
+    "Github/LunaHook/releases/latest/download/Release_English.zip"
+)
 
 LocaleRe = "https://github.com/InWILL/Locale_Remulator/releases/download/v1.5.3-beta.1/Locale_Remulator.1.5.3-beta.1.zip"
-
-# rootDir = os.path.dirname(os.path.abspath(__file__))
-# print(__file__)
-# print(rootDir)
-rootDir = os.path.dirname(__file__)
 
 
 def createPluginDirs():
@@ -112,17 +175,11 @@ def move_directory_contents(source_dir, destination_dir):
 def downloadcommon():
     os.chdir(rootDir + "\\temp")
     downloadlr()
-    subprocess.run(
-        f"curl -LO https://lunatranslator.xyz/Resource/build_req/mecab.zip"
-    )
+    subprocess.run(f"curl -LO {dynalink('Resource/build_req/mecab.zip')}")
     subprocess.run(f"7z x mecab.zip -oALL")
-    subprocess.run(
-        f"curl -LO https://lunatranslator.xyz/Resource/build_req/ocr.zip"
-    )
+    subprocess.run(f"curl -LO {dynalink('Resource/build_req/ocr.zip')}")
     subprocess.run(f"7z x ocr.zip -oALL")
-    subprocess.run(
-        f"curl -LO https://lunatranslator.xyz/Resource/build_req/magpie.zip"
-    )
+    subprocess.run(f"curl -LO {dynalink('Resource/build_req/magpie.zip')}")
     subprocess.run(f"7z x magpie.zip -oALL")
 
     move_directory_contents("ALL/ALL", f"{rootDir}/LunaTranslator/files/plugins")
@@ -174,16 +231,14 @@ def downloadCurl():
     )
 
 
-def downloadOCRModel(locale):
-    if locale not in availableLocales:
-        return
+def downloadOCRModel():
     os.chdir(rootDir + "\\LunaTranslator\\files")
     if not os.path.exists("ocr"):
         os.mkdir("ocr")
     os.chdir("ocr")
-    subprocess.run(f"curl -LO {ocrModelUrl}/{locale}.zip")
-    subprocess.run(f"7z x {locale}.zip")
-    os.remove(f"{locale}.zip")
+    subprocess.run(f"curl -LO {ocrModelUrl}")
+    subprocess.run(f"7z x ja.zip")
+    os.remove(f"ja.zip")
 
 
 def get_url_as_json(url):
@@ -241,23 +296,14 @@ def buildPlugins():
 
 def downloadsomething():
     os.chdir(rootDir + "\\temp")
-    subprocess.run(
-        f"curl -LO https://lunatranslator.xyz/Resource/build_req/stylesheets-main.zip"
-    )
+    subprocess.run(f"curl -LO {dynalink('Resource/build_req/stylesheets-main.zip')}")
     subprocess.run(f"7z x stylesheets-main.zip -oALL")
-    move_directory_contents("ALL/stylesheets-main", rootDir + "\\LunaTranslator\\files\\themes")
+    move_directory_contents(
+        "ALL/stylesheets-main", rootDir + "\\LunaTranslator\\files\\themes"
+    )
 
 
 if __name__ == "__main__":
-    if sys.argv[1] == "loadversion":
-        os.chdir(rootDir)
-        with open("plugins/CMakeLists.txt", "r", encoding="utf8") as ff:
-            pattern = r"set\(VERSION_MAJOR\s*(\d+)\s*\)\nset\(VERSION_MINOR\s*(\d+)\s*\)\nset\(VERSION_PATCH\s*(\d+)\s*\)"
-            match = re.findall(pattern, ff.read())[0]
-            version_major, version_minor, version_patch = match
-            versionstring = f"v{version_major}.{version_minor}.{version_patch}"
-            print("version=" + versionstring)
-            exit()
     arch = sys.argv[1]
     version = sys.argv[2]
     os.chdir(rootDir)
@@ -270,7 +316,7 @@ if __name__ == "__main__":
     downloadLocaleEmulator()
     downloadNtlea()
     downloadCurl()
-    downloadOCRModel("ja")
+    downloadOCRModel()
     downloadcommon()
     buildLunaHook()
 

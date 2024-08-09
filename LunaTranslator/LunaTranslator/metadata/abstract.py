@@ -2,7 +2,7 @@ import os, hashlib, queue, gobject
 from myutils.proxy import getproxy
 from threading import Thread
 from myutils.commonbase import proxysession
-from myutils.config import globalconfig, savehook_new_data
+from myutils.config import globalconfig, savehook_new_data, namemapcast
 from traceback import print_exc
 from requests import RequestException
 
@@ -129,11 +129,13 @@ class common:
             ff.write(_content)
 
     def dispatchdownloadtask(self, url):
+        if url is None:
+            return None
         __routine = f"cache/metadata/{self.typename}"
         if self.typename == "vndb":
             __routine = "cache/vndb"
 
-        if "." in url[5:]:
+        if "." in url[-5:]:
             __ = url[url.rfind(".") :]
         else:
             __ = ".jpg"
@@ -161,7 +163,9 @@ class common:
         for _ in imagepath_all:
             if _ is None:
                 continue
-            if os.path.normpath(os.path.abspath(_)) not in normaled:
+            norm = os.path.normpath(os.path.abspath(_))
+            if norm not in normaled:
+                normaled.append(norm)
                 savehook_new_data[gameuid]["imagepath_all"].append(_)
         if title:
             if not savehook_new_data[gameuid]["istitlesetted"]:
@@ -172,15 +176,31 @@ class common:
             if _url not in _urls:
                 savehook_new_data[gameuid]["relationlinks"].append((_vis, _url))
         if namemap:
-            if (len(savehook_new_data[gameuid]["namemap"]) == 0) or (
-                not savehook_new_data[gameuid]["vndbnamemap_modified"]
-            ):
-                savehook_new_data[gameuid]["namemap"] = namemap
-                savehook_new_data[gameuid]["vndbnamemap_modified"] = False
-        if len(webtags):
-            savehook_new_data[gameuid]["webtags"] = webtags
-        if len(developers):
-            savehook_new_data[gameuid]["developers"] = developers
+            dedump = set()
+            for _ in savehook_new_data[gameuid]["namemap2"]:
+                dedump.add(_.get("key", ""))
+            namemap = namemapcast(namemap)
+            for name in namemap:
+                if name in dedump:
+                    continue
+                savehook_new_data[gameuid]["namemap2"].append(
+                    {
+                        "key": name,
+                        "value": namemap[name],
+                        "regex": False,
+                        "escape": False,
+                    }
+                )
+
+        for _ in webtags:
+            if _ in savehook_new_data[gameuid]["webtags"]:
+                continue
+            savehook_new_data[gameuid]["webtags"].append(_)
+
+        for _ in developers:
+            if _ in savehook_new_data[gameuid]["developers"]:
+                continue
+            savehook_new_data[gameuid]["developers"].append(_)
         return True
 
     def dispatchsearchfordata(self, gameuid, vid):

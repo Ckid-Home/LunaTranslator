@@ -1,5 +1,5 @@
 import time, uuid
-import os, threading, sys, re, codecs
+import os, threading, re, codecs, winreg
 from qtsymbols import *
 from traceback import print_exc
 from myutils.config import (
@@ -10,10 +10,10 @@ from myutils.config import (
     findgameuidofpath,
     savehook_new_data,
     static_data,
-    tryreadconfig,
     getlanguse,
     set_font_default,
 )
+from ctypes import c_int, CFUNCTYPE, c_void_p
 import sqlite3
 from myutils.utils import (
     minmaxmoveobservefunc,
@@ -26,9 +26,9 @@ from myutils.utils import (
     targetmod,
     translate_exits,
 )
-from myutils.wrapper import threader
+from myutils.wrapper import threader, tryprint
 from gui.showword import searchwordW
-from myutils.hwnd import getpidexe, ListProcess, getExeIcon
+from myutils.hwnd import getpidexe, ListProcess, getExeIcon, getcurrexe
 from textsource.copyboard import copyboard
 from textsource.texthook import texthook
 from textsource.ocrtext import ocrtext
@@ -67,7 +67,7 @@ class MAINUI:
         self.lasttranslatorindex = 0
         self.translators = {}
         self.cishus = {}
-        self.reader = None
+        self.specialreaders = {}
         self.textsource_p = None
         self.currentmd5 = "0"
         self.currenttext = ""
@@ -89,6 +89,24 @@ class MAINUI:
         self.sqlsavegameinfo = None
         self.notifyonce = set()
         self.audioplayer = series_audioplayer()
+        self._internal_reader = None
+        self.reader_uid = None
+
+    @property
+    def reader(self):
+        return self._internal_reader
+
+    @reader.setter
+    def reader(self, _):
+        if _ is None:
+            self._internal_reader = None
+            self.reader_uid = None
+            self.settin_ui.voicelistsignal.emit(None)
+        else:
+            if self.reader_uid != _.uid:
+                return
+            self._internal_reader = _
+            self.settin_ui.voicelistsignal.emit(_)
 
     @property
     def textsource(self):
@@ -172,6 +190,15 @@ class MAINUI:
         with self.solvegottextlock:
             self.textgetmethod_1(text, is_auto_run, embedcallback, onlytrans)
 
+    def parsehira(self, text):
+        try:
+            if self.hira_:
+                return self.hira_.safeparse(text)
+            else:
+                return []
+        except:
+            return []
+
     def textgetmethod_1(
         self, text, is_auto_run=True, embedcallback=None, onlytrans=False
     ):
@@ -237,12 +264,19 @@ class MAINUI:
         except:
             pass
         if onlytrans == False:
-            self.dispatchoutputer(text)
             self.currenttext = text
             self.currenttranslate = ""
             if globalconfig["read_raw"]:
                 self.currentread = text
-                self.readcurrent()
+                which = self.__usewhich()
+                if which.get(
+                    "tts_repair_use_at_translate",
+                    globalconfig["ttscommon"]["tts_repair_use_at_translate"],
+                ):
+                    text = self.readcurrent(needresult=True)
+                else:
+                    self.readcurrent()
+            self.dispatchoutputer(text)
 
         self.transhis.getnewsentencesignal.emit(text)
         self.maybesetedittext(text)
@@ -496,7 +530,7 @@ class MAINUI:
             text = parsemayberegexreplace(usedict["tts_repair_regex"], text)
         return text
 
-    def guessmaybeskip(self, dic: dict, res: str):
+    def matchwhich(self, dic: dict, res: str):
 
         for item in dic:
             if item["regex"]:
@@ -505,11 +539,11 @@ class MAINUI:
                 )
                 if item["condition"] == 1:
                     if re.search(retext, res):
-                        return True
+                        return item
                 elif item["condition"] == 0:
                     if re.match(retext, res) or re.search(retext + "$", res):
                         # 用^xxx|xxx$有可能有点危险
-                        return True
+                        return item
             else:
                 if item["condition"] == 1:
                     if (
@@ -520,55 +554,99 @@ class MAINUI:
                         resx = res.split(" ")
                         for i in range(len(resx)):
                             if resx[i] == item["key"]:
-                                return True
+                                return item
                     else:
                         if item["key"] in res:
-                            return True
+                            return item
                 elif item["condition"] == 0:
                     if res.startswith(item["key"]) or res.endswith(item["key"]):
-                        return True
-        return False
+                        return item
+        return None
 
-    def ttsskip(self, text, usedict):
+    def ttsskip(self, text, usedict) -> dict:
         if usedict["tts_skip"]:
-            return self.guessmaybeskip(usedict["tts_skip_regex"], text)
-        return False
+            return self.matchwhich(usedict["tts_skip_regex"], text)
+        return None
 
     @threader
-    def readcurrent(self, force=False):
-        if not self.reader:
+    def __readcurrent(self, text1, text2, force=False):
+        if (not force) and (not globalconfig["autoread"]):
             return
-        if not (force or globalconfig["autoread"]):
+        matchitme = self.ttsskip(text1, self.__usewhich())
+        reader = None
+        if matchitme is None:
+            reader = self.reader
+        else:
+            target = matchitme.get("target", "default")
+            if target == "default":
+                reader = self.reader
+            elif target == "skip":
+                if not force:
+                    return
+                reader = self.reader
+            else:
+                engine, voice, _ = target
+                key = str((engine, voice))  # voice可能是list，无法hash
+                reader = self.specialreaders.get(key, None)
+                if reader == -1:
+                    reader = self.reader
+                elif reader is None:
+                    try:
+                        reader = self.loadreader(engine, privateconfig={"voice": voice})
+                        self.specialreaders[key] = reader
+                    except:
+                        reader = self.reader
+                        self.specialreaders[key] = -1
+        if reader is None:
             return
-        if (not force) and self.ttsskip(self.currentread, self.__usewhich()):
-            return
-        text = self.ttsrepair(self.currentread, self.__usewhich())
-        self.reader.read(text, force)
+        if text2 is None:
+            text2 = self.ttsrepair(text1, self.__usewhich())
+        reader.read(text2, force)
+
+    def readcurrent(self, force=False, needresult=False):
+        if needresult:
+            text = self.ttsrepair(self.currentread, self.__usewhich())
+            self.__readcurrent(self.currentread, text, force)
+            return text
+        else:
+            self.__readcurrent(self.currentread, None, force)
+
+    def loadreader(self, use, privateconfig=None, init=True, uid=None):
+        aclass = importlib.import_module("tts." + use).TTS
+        if uid is None:
+            uid = uuid.uuid4()
+        obj = aclass(use, self.audioplayer.play, privateconfig, init, uid)
+        return obj
+
+    def __reader_usewhich(self):
+
+        for key in globalconfig["reader"]:
+            if globalconfig["reader"][key]["use"] and os.path.exists(
+                ("./LunaTranslator/tts/" + key + ".py")
+            ):
+                return key
+        return None
 
     @threader
-    def startreader(self, use=None, checked=True):
-        try:
-            self.reader.end()
-        except:
-            pass
+    def startreader(self, use=None, checked=True, setting=False):
+        if setting:
+            if use != self.__reader_usewhich():
+                return
+            self.reader = None
+            self.reader_uid = uuid.uuid4()
+            self.reader = self.loadreader(use, uid=self.reader_uid)
+            return
+        if not checked:
+            self.reader = None
+            return
+        if use is None:
+            use = self.__reader_usewhich()
+        if not use:
+            self.reader = None
+            return
         self.reader = None
-        self.settin_ui.voicelistsignal.emit([], -1)
-        if checked:
-            if use is None:
-
-                for key in globalconfig["reader"]:
-                    if globalconfig["reader"][key]["use"] and os.path.exists(
-                        ("./LunaTranslator/tts/" + key + ".py")
-                    ):
-                        use = key
-                        break
-            if use:
-                aclass = importlib.import_module("tts." + use).TTS
-
-                self.reader_usevoice = use
-                self.reader = aclass(
-                    use, self.settin_ui.voicelistsignal, self.audioplayer.play
-                )
+        self.reader_uid = uuid.uuid4()
+        self.reader = self.loadreader(use, uid=self.reader_uid)
 
     def selectprocess(self, selectedp, title):
         self.textsource = None
@@ -587,16 +665,15 @@ class MAINUI:
             if globalconfig["startgamenototop"] == False:
                 idx = savehook_new_list.index(gameuid)
                 savehook_new_list.insert(0, savehook_new_list.pop(idx))
-        self.textsource = texthook(pids, hwnd, pexe, gameuid)
+        self.textsource = texthook(pids, hwnd, pexe, gameuid, autostart=False)
         self.textsource.start()
 
     def starttextsource(self, use=None, checked=True):
         self.translation_ui.showhidestate = False
         self.translation_ui.refreshtooliconsignal.emit()
 
-        for button in self.translation_ui.showbuttons:
-            button.show()
         self.translation_ui.set_color_transparency()
+        self.translation_ui.adjustbuttons()
         try:
             self.settin_ui.selectbutton.setEnabled(
                 globalconfig["sourcestatus2"]["texthook"]["use"]
@@ -808,28 +885,16 @@ class MAINUI:
                 uid = findgameuidofpath(name_, savehook_new_list)
                 if not uid:
                     return
-                lps = ListProcess(False)
-                for pids, _exe in lps:
-                    if _exe != name_:
-                        continue
-
-                    if self.textsource is not None:
-                        return
-                    if not globalconfig["sourcestatus2"]["texthook"]["use"]:
-                        return
-                    if globalconfig["startgamenototop"] == False:
-                        idx = savehook_new_list.index(uid)
-                        savehook_new_list.insert(0, savehook_new_list.pop(idx))
-                    needinserthookcode = savehook_new_data[uid]["needinserthookcode"]
-                    self.textsource = texthook(
-                        pids,
-                        hwnd,
-                        name_,
-                        uid,
-                        autostarthookcode=savehook_new_data[uid]["hook"],
-                        needinserthookcode=needinserthookcode,
-                    )
-                    self.textsource.start()
+                pids = ListProcess(name_)
+                if self.textsource is not None:
+                    return
+                if not globalconfig["sourcestatus2"]["texthook"]["use"]:
+                    return
+                if globalconfig["startgamenototop"] == False:
+                    idx = savehook_new_list.index(uid)
+                    savehook_new_list.insert(0, savehook_new_list.pop(idx))
+                self.textsource = texthook(pids, hwnd, name_, uid, autostart=True)
+                self.textsource.start()
 
             else:
                 pids = self.textsource.pids
@@ -879,7 +944,7 @@ class MAINUI:
                 elif "once" not in dir(self.textsource):
                     self.textsource.once = True
                     setandrefresh(True)
-            if len(self.textsource.pids):
+            if self.textsource.pids:
                 _mute = winsharedutils.GetProcessMute(self.textsource.pids[0])
                 if self.translation_ui.processismuteed != _mute:
                     self.translation_ui.processismuteed = _mute
@@ -912,57 +977,6 @@ class MAINUI:
             )
         except:
             pass
-        self.migrate_info()
-
-    @threader
-    def migrate_info(self):
-        for k in savehook_new_data:
-            self.migrate_traceplaytime_v2(k)
-            self.migrate_vndbtags(k)
-            self.migrate_images(k)
-
-    def migrate_traceplaytime_v2(self, k):
-
-        if "traceplaytime_v2" not in savehook_new_data[k]:
-            return
-        traceplaytime_v2 = savehook_new_data[k].get("traceplaytime_v2", [])
-        for slice in traceplaytime_v2.copy():
-            self.traceplaytime(k, slice[0], slice[1], True)
-            savehook_new_data[k]["traceplaytime_v2"].pop(0)
-        savehook_new_data[k].pop("traceplaytime_v2")
-
-    def migrate_vndbtags(self, k):
-        def getvndbrealtags(vndbtags_naive):
-            vndbtagdata = tryreadconfig("vndbtagdata.json")
-            vndbtags = []
-            for tagid in vndbtags_naive:
-                if tagid in vndbtagdata:
-                    vndbtags.append(vndbtagdata[tagid])
-            return vndbtags
-
-        if "vndbtags" not in savehook_new_data[k]:
-            return
-        vndbtags = savehook_new_data[k].get("vndbtags", [])
-        vndbtags = getvndbrealtags(vndbtags)
-        savehook_new_data[k]["webtags"] = vndbtags
-        savehook_new_data[k].pop("vndbtags")
-
-    def migrate_images(self, k):
-
-        if (
-            "imagepath" not in savehook_new_data[k]
-            and "imagepath_much2" not in savehook_new_data[k]
-        ):
-            return
-        single = savehook_new_data[k].get("imagepath", None)
-        much = savehook_new_data[k].get("imagepath_much2", [])
-        __ = []
-        if single:
-            __.append(single)
-        __ += much
-        savehook_new_data[k]["imagepath_all"] = __
-        savehook_new_data[k].pop("imagepath")
-        savehook_new_data[k].pop("imagepath_much2")
 
     def querytraceplaytime_v4(self, gameuid):
         gameinternalid = self.get_gameinternalid(uid2gamepath[gameuid])
@@ -1077,7 +1091,9 @@ class MAINUI:
         except:
             return
         if widget == self.translation_ui:
-            winsharedutils.showintab(int(widget.winId()), globalconfig["showintab"])
+            winsharedutils.showintab(
+                int(widget.winId()), globalconfig["showintab"], True
+            )
             return
         window_flags = widget.windowFlags()
         if (
@@ -1094,43 +1110,39 @@ class MAINUI:
         ):
             # combobox的下拉框，然后这个widget会迅速销毁，会导致任务栏闪一下。没别的办法了姑且这样过滤一下
             return
-        winsharedutils.showintab(int(widget.winId()), globalconfig["showintab_sub"])
+        winsharedutils.showintab(
+            int(widget.winId()), globalconfig["showintab_sub"], False
+        )
 
     def inittray(self):
-
+        self.tray = QSystemTrayIcon()
+        self.tray.setIcon(getExeIcon(getcurrexe()))
         trayMenu = LMenu(self.commonstylebase)
-        showAction = LAction(
-            ("&显示"),
-            trayMenu,
-            triggered=self.translation_ui.show_,
-        )
-        settingAction = LAction(
-            qtawesome.icon("fa.gear"),
-            ("&设置"),
-            trayMenu,
-            triggered=lambda: self.settin_ui.showsignal.emit(),
-        )
-        quitAction = LAction(
-            qtawesome.icon("fa.times"),
-            ("&退出"),
-            trayMenu,
-            triggered=self.translation_ui.close,
-        )
+        showAction = LAction("&显示", trayMenu)
+        showAction.triggered.connect(self.translation_ui.show_)
+        settingAction = LAction(qtawesome.icon("fa.gear"), "&设置", trayMenu)
+        settingAction.triggered.connect(self.settin_ui.showsignal)
+        quitAction = LAction(qtawesome.icon("fa.times"), "&退出", trayMenu)
+        quitAction.triggered.connect(self.translation_ui.close)
         trayMenu.addAction(showAction)
         trayMenu.addAction(settingAction)
         trayMenu.addSeparator()
         trayMenu.addAction(quitAction)
-        self.tray = QSystemTrayIcon()
-
-        icon = getExeIcon(sys.argv[0])  #'./LunaTranslator.exe')# QIcon()
-        self.tray.setIcon(icon)
-
-        self.tray.activated.connect(self.translation_ui.leftclicktray)
-        self.tray.show()
+        trayMenu.addAction(showAction)
+        trayMenu.addAction(settingAction)
+        trayMenu.addSeparator()
+        trayMenu.addAction(quitAction)
         self.tray.setContextMenu(trayMenu)
+        self.tray.activated.connect(self.leftclicktray)
+        self.tray.messageClicked.connect(winsharedutils.dispatchcloseevent)
+        self.tray.show()
+
+    def leftclicktray(self, reason):
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
+            self.translation_ui.showhideui()
 
     def showtraymessage(self, title, message):
-        self.tray.showMessage(_TR(title), _TR(message), QSystemTrayIcon.MessageIcon())
+        self.tray.showMessage(_TR(title), _TR(message), getExeIcon(getcurrexe()))
 
     def destroytray(self):
         self.tray.hide()
@@ -1199,7 +1211,7 @@ class MAINUI:
         self.loadmetadatas()
         self.translation_ui = QUnFrameWindow()
         winsharedutils.showintab(
-            int(self.translation_ui.winId()), globalconfig["showintab"]
+            int(self.translation_ui.winId()), globalconfig["showintab"], True
         )
         self.translation_ui.show()
         self.translation_ui.aftershowdosomething()
@@ -1225,9 +1237,11 @@ class MAINUI:
             target=minmaxmoveobservefunc, args=(self.translation_ui,)
         ).start()
         threading.Thread(target=self.checkgameplayingthread).start()
-        threading.Thread(target=self.darklistener).start()
+        self.messagecallback__ = CFUNCTYPE(None, c_int, c_void_p)(self.messagecallback)
+        winsharedutils.globalmessagelistener(self.messagecallback__)
         self.inittray()
         self.createsavegamedb()
+        self.__count = 0
 
     def openlink(self, file):
         if file.startswith("http") and checkisusingwine():
@@ -1235,14 +1249,20 @@ class MAINUI:
             return
         return os.startfile(file)
 
-    def darklistener(self):
-        sema = winsharedutils.startdarklistener()
-        while True:
-            # 会触发两次
-            windows.WaitForSingleObject(sema, windows.INFINITE)
+    def messagecallback(self, msg, param):
+        if msg == 0:
             if globalconfig["darklight2"] == 0:
-                self.commonstylebase.setstylesheetsignal.emit()
-            windows.WaitForSingleObject(sema, windows.INFINITE)
+                if self.__count % 2:
+                    self.commonstylebase.setstylesheetsignal.emit()
+                self.__count += 1
+        elif msg == 1:
+            if bool(param):
+                self.translation_ui.settop()
+            else:
+                if not globalconfig["keepontop"]:
+                    self.translation_ui.canceltop()
+        elif msg == 2:
+            self.translation_ui.closesignal.emit()
 
     def installeventfillter(self):
         class WindowEventFilter(QObject):
@@ -1275,3 +1295,18 @@ class MAINUI:
                 targetmod[k] = importlib.import_module(f"metadata.{k}").searcher(k)
             except:
                 print_exc()
+
+    @tryprint
+    def urlprotocol(self):
+
+        key = winreg.CreateKey(
+            winreg.HKEY_CURRENT_USER, r"Software\Classes\lunatranslator"
+        )
+        winreg.SetValue(key, None, winreg.REG_SZ, "URL:lunatranslator")
+        winreg.SetValueEx(key, r"URL Protocol", 0, winreg.REG_SZ, "")
+        keysub = winreg.CreateKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Classes\lunatranslator\shell\open\command",
+        )
+        command = f'"{getcurrexe()}" --URLProtocol "%1"'
+        winreg.SetValue(keysub, r"", winreg.REG_SZ, command)

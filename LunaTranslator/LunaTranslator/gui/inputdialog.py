@@ -1,7 +1,7 @@
 from qtsymbols import *
 import functools, importlib
 from traceback import print_exc
-import qtawesome
+import qtawesome, os, gobject
 from myutils.config import globalconfig, _TR
 from myutils.utils import makehtml
 from myutils.wrapper import Singleton_close
@@ -17,6 +17,7 @@ from gui.usefulwidget import (
     FocusDoubleSpin,
     LFocusCombo,
     getsimplecombobox,
+    SplitLine,
 )
 from gui.dynalang import (
     LFormLayout,
@@ -36,52 +37,24 @@ class noundictconfigdialog1(LDialog):
             row,
             [
                 QStandardItem(),
+                QStandardItem(),
                 QStandardItem(item["key"]),
                 QStandardItem(item["value"]),
             ],
         )
+        if "regex" not in item:
+            item["regex"] = False
+        if "escape" not in item:
+            item["escape"] = item["regex"]
         self.table.setIndexWidget(
             self.model.index(row, 0), getsimpleswitch(item, "regex")
         )
-
-    def showmenu(self, table: TableViewW, _):
-        r = table.currentIndex().row()
-        if r < 0:
-            return
-        menu = QMenu(table)
-        up = LAction(("上移"))
-        down = LAction(("下移"))
-        menu.addAction(up)
-        menu.addAction(down)
-        action = menu.exec(table.cursor().pos())
-
-        if action == up:
-
-            self.moverank(table, -1)
-
-        elif action == down:
-            self.moverank(table, 1)
-
-    def moverank(self, table: TableViewW, dy):
-        curr = table.currentIndex()
-        model = table.model()
-        target = (curr.row() + dy) % model.rowCount()
-        texts = [model.item(curr.row(), i).text() for i in range(model.columnCount())]
-
-        item = self.reflist.pop(curr.row())
-        self.reflist.insert(
-            target, {"key": texts[1], "value": [2], "regex": item["regex"]}
-        )
-        model.removeRow(curr.row())
-        model.insertRow(target, [QStandardItem(text) for text in texts])
-        table.setCurrentIndex(model.index(target, curr.column()))
-        table.setIndexWidget(
-            model.index(target, 0), getsimpleswitch(self.reflist[target], "regex")
+        self.table.setIndexWidget(
+            self.model.index(row, 1), getsimpleswitch(item, "escape")
         )
 
     def __init__(self, parent, reflist, title, label) -> None:
         super().__init__(parent, Qt.WindowType.WindowCloseButtonHint)
-        self.label = label
         self.setWindowTitle(title)
         # self.setWindowModality(Qt.ApplicationModal)
         self.reflist = reflist
@@ -91,160 +64,7 @@ class noundictconfigdialog1(LDialog):
         self.model.setHorizontalHeaderLabels(label)
         table = TableViewW(self)
         table.setModel(self.model)
-        table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
-        table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        table.horizontalHeader().setSectionResizeMode(
-            0, QHeaderView.ResizeMode.ResizeToContents
-        )
-        table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        table.customContextMenuRequested.connect(
-            functools.partial(self.showmenu, table)
-        )
-
-        self.table = table
-        for row, item in enumerate(reflist):
-            self.newline(row, item)
-
-        search = QHBoxLayout()
-        searchcontent = QLineEdit()
-        search.addWidget(searchcontent)
-        button4 = LPushButton("搜索")
-
-        def clicked4():
-            text = searchcontent.text()
-
-            rows = self.model.rowCount()
-            cols = self.model.columnCount()
-            for row in range(rows):
-                ishide = True
-                for c in range(cols):
-                    if text in self.model.item(row, c).text():
-                        ishide = False
-                        break
-                table.setRowHidden(row, ishide)
-
-        button4.clicked.connect(clicked4)
-        search.addWidget(button4)
-
-        button = threebuttons(texts=["添加行", "删除行", "上移", "下移", "立即应用"])
-
-        def clicked1():
-            self.reflist.insert(0, {"key": "", "value": "", "regex": False})
-
-            self.newline(0, self.reflist[0])
-
-        button.btn1clicked.connect(clicked1)
-
-        def clicked2():
-            skip = []
-            for index in self.table.selectedIndexes():
-                if index.row() in skip:
-                    continue
-                skip.append(index.row())
-            skip = reversed(sorted(skip))
-
-            for row in skip:
-                self.model.removeRow(row)
-                self.reflist.pop(row)
-
-        button.btn2clicked.connect(clicked2)
-        button.btn5clicked.connect(self.apply)
-        button.btn3clicked.connect(functools.partial(self.moverank, table, -1))
-        button.btn4clicked.connect(functools.partial(self.moverank, table, 1))
-        self.button = button
-        formLayout.addWidget(table)
-        formLayout.addLayout(search)
-        formLayout.addWidget(button)
-
-        self.resize(QSize(600, 400))
-        self.show()
-
-    def apply(self):
-        rows = self.model.rowCount()
-        dedump = set()
-        needremoves = []
-        for row in range(rows):
-            k = self.model.item(row, 1).text()
-            v = self.model.item(row, 2).text()
-            if k == "" or k in dedump:
-                needremoves.append(row)
-                continue
-            self.reflist[row].update({"key": k, "value": v})
-            dedump.add(k)
-        for row in reversed(needremoves):
-            self.model.removeRow(row)
-            self.reflist.pop(row)
-
-    def closeEvent(self, a0: QCloseEvent) -> None:
-        self.button.setFocus()
-        self.apply()
-
-
-@Singleton_close
-class noundictconfigdialog2(LDialog):
-    def newline(self, row, item):
-
-        self.model.insertRow(
-            row,
-            [QStandardItem(), QStandardItem(), QStandardItem(item["key"])],
-        )
-        self.table.setIndexWidget(
-            self.model.index(row, 0), getsimpleswitch(item, "regex")
-        )
-        com = getsimplecombobox(["首尾", "包含"], item, "condition")
-        self.table.setIndexWidget(self.model.index(row, 1), com)
-
-    def showmenu(self, table: TableViewW, _):
-        r = table.currentIndex().row()
-        if r < 0:
-            return
-        menu = QMenu(table)
-        up = LAction(("上移"))
-        down = LAction(("下移"))
-        menu.addAction(up)
-        menu.addAction(down)
-        action = menu.exec(table.cursor().pos())
-
-        if action == up:
-
-            self.moverank(table, -1)
-
-        elif action == down:
-            self.moverank(table, 1)
-
-    def moverank(self, table: TableViewW, dy):
-        curr = table.currentIndex()
-        model = table.model()
-        target = (curr.row() + dy) % model.rowCount()
-        texts = [model.item(curr.row(), i).text() for i in range(model.columnCount())]
-
-        item = self.reflist.pop(curr.row())
-        self.reflist.insert(
-            target,
-            {"key": texts[1], "condition": item["condition"], "regex": item["regex"]},
-        )
-
-        model.removeRow(curr.row())
-        model.insertRow(target, [QStandardItem(text) for text in texts])
-        table.setCurrentIndex(model.index(target, curr.column()))
-        table.setIndexWidget(
-            model.index(target, 0), getsimpleswitch(self.reflist[target], "regex")
-        )
-        com = getsimplecombobox(["首尾", "包含"], item, "condition")
-        table.setIndexWidget(self.model.index(target, 1), com)
-
-    def __init__(self, parent, reflist, title, label) -> None:
-        super().__init__(parent, Qt.WindowType.WindowCloseButtonHint)
-        self.label = label
-        self.setWindowTitle(title)
-        # self.setWindowModality(Qt.ApplicationModal)
-        self.reflist = reflist
-        formLayout = QVBoxLayout(self)  # 配置layout
-
-        self.model = LStandardItemModel()
-        self.model.setHorizontalHeaderLabels(label)
-        table = TableViewW(self)
-        table.setModel(self.model)
+        table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
         table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
         table.horizontalHeader().setSectionResizeMode(
             1, QHeaderView.ResizeMode.ResizeToContents
@@ -252,10 +72,268 @@ class noundictconfigdialog2(LDialog):
         table.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeMode.ResizeToContents
         )
-        table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        table.customContextMenuRequested.connect(
-            functools.partial(self.showmenu, table)
+        table.setsimplemenu()
+
+        self.table = table
+        for row, item in enumerate(reflist):
+            self.newline(row, item)
+
+        search = QHBoxLayout()
+        searchcontent = QLineEdit()
+        search.addWidget(searchcontent)
+        button4 = LPushButton("搜索")
+
+        def clicked4():
+            text = searchcontent.text()
+
+            rows = self.model.rowCount()
+            cols = self.model.columnCount()
+            for row in range(rows):
+                ishide = True
+                for c in range(cols):
+                    if text in self.model.item(row, c).text():
+                        ishide = False
+                        break
+                table.setRowHidden(row, ishide)
+
+        button4.clicked.connect(clicked4)
+        search.addWidget(button4)
+        table.getindexwidgetdata = self.__getindexwidgetdata
+        table.setindexwidget = self.__setindexwidget
+        self.table = table
+        button = threebuttons(texts=["添加行", "删除行", "上移", "下移", "立即应用"])
+        table.insertplainrow = lambda row: self.newline(
+            row, {"key": "", "value": "", "regex": False}
         )
+
+        button.btn1clicked.connect(functools.partial(table.insertplainrow, 0))
+
+        button.btn2clicked.connect(self.table.removeselectedrows)
+        button.btn5clicked.connect(self.apply)
+        button.btn3clicked.connect(functools.partial(table.moverank, -1))
+        button.btn4clicked.connect(functools.partial(table.moverank, 1))
+        self.button = button
+        formLayout.addWidget(table)
+        formLayout.addLayout(search)
+        formLayout.addWidget(button)
+
+        self.resize(QSize(600, 400))
+        self.show()
+
+    def __setindexwidget(self, index: QModelIndex, data):
+        if index.column() == 0:
+            self.table.setIndexWidget(index, getsimpleswitch(data, "regex"))
+        if index.column() == 1:
+            self.table.setIndexWidget(index, getsimpleswitch(data, "escape"))
+
+    def __getindexwidgetdata(self, index: QModelIndex):
+        if index.column() == 0:
+            return {"regex": self.table.indexWidgetX(index).isChecked()}
+        if index.column() == 1:
+            return {"escape": self.table.indexWidgetX(index).isChecked()}
+
+    def apply(self):
+        def __check(row):
+            k = self.model.item(row, 2).text()
+            if k == "":
+                return ""
+            switch = self.table.indexWidgetX(row, 0).isChecked()
+            es = self.table.indexWidgetX(row, 1).isChecked()
+            return (switch, es, k)
+
+        self.table.dedumpmodel(__check)
+        self.reflist.clear()
+        for row in range(self.model.rowCount()):
+            k = self.model.item(row, 2).text()
+            v = self.model.item(row, 3).text()
+            switch = self.table.indexWidgetX(row, 0)
+            es = self.table.indexWidgetX(row, 1)
+            self.reflist.append(
+                {
+                    "key": k,
+                    "value": v,
+                    "escape": es.isChecked(),
+                    "regex": switch.isChecked(),
+                }
+            )
+
+    def closeEvent(self, a0: QCloseEvent) -> None:
+        self.button.setFocus()
+        self.apply()
+
+
+class voiceselect(LDialog):
+    voicelistsignal = pyqtSignal(object)
+
+    def __init__(self, *argc, **kwarg):
+        super().__init__(*argc, **kwarg)
+        self.setWindowTitle("选择声音")
+        self.setWindowFlags(
+            self.windowFlags()
+            & ~Qt.WindowContextHelpButtonHint
+            & ~Qt.WindowType.WindowCloseButtonHint
+            | Qt.WindowStaysOnTopHint
+        )
+        _layout = LFormLayout(self)
+
+        button = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        button.accepted.connect(self.accept)
+        button.rejected.connect(self.reject)
+
+        self.engine_vis = []
+        self.engine_internal = []
+        for name in globalconfig["reader"]:
+
+            _f = "./LunaTranslator/tts/{}.py".format(name)
+            if os.path.exists(_f) == False:
+                continue
+            self.engine_vis.append(globalconfig["reader"][name]["name"])
+            self.engine_internal.append(name)
+        self.datas = {
+            "engine": self.engine_internal[0],
+            "voice": None,
+            "vis": "",
+            "visx": "",
+        }
+        combo = getsimplecombobox(
+            self.engine_vis,
+            self.datas,
+            "engine",
+            internal=self.engine_internal,
+            callback=self.__engine_cb,
+        )
+        _layout.addRow("引擎", combo)
+        self._layout = _layout
+        combo.currentIndexChanged.emit(combo.currentIndex())
+        _layout.addRow(button)
+        self.voicelistsignal.connect(self.loadedvoice)
+        self.object = None
+        self.lastwidget = None
+
+    def loadedvoice(self, obj):
+        vl = obj.voiceshowlist
+        if self._layout.rowCount() == 3:
+            self._layout.removeRow(1)
+        self.datas["voice"] = obj.voice
+        voices = getsimplecombobox(
+            vl,
+            self.datas,
+            "voice",
+            internal=obj.voicelist,
+            callback=functools.partial(self._selectvoice, obj),
+        )
+        self._layout.insertRow(1, "语音", voices)
+        voices.currentIndexChanged.emit(voices.currentIndex())
+
+    def _selectvoice(self, obj, internal):
+        vis = obj.voiceshowlist[obj.voicelist.index(internal)]
+        self.datas["vis"] = self.datas["visx"] + " " + vis
+
+    def __engine_cb(self, internal):
+        self.datas["visx"] = self.engine_vis[self.engine_internal.index(internal)]
+        self.datas["vis"] = self.datas["visx"]
+        self.datas["voice"] = None
+        try:
+            self.object = gobject.baseobject.loadreader(internal, init=False)
+            self.voicelistsignal.emit(self.object)
+        except:
+
+            if self._layout.rowCount() == 3:
+                self._layout.removeRow(1)
+
+
+@Singleton_close
+class yuyinzhidingsetting(LDialog):
+    def newline(self, row, item):
+
+        self.model.insertRow(
+            row,
+            [
+                QStandardItem(),
+                QStandardItem(),
+                QStandardItem(item["key"]),
+                QStandardItem(),
+            ],
+        )
+        self.table.setIndexWidget(
+            self.model.index(row, 0), getsimpleswitch(item, "regex")
+        )
+        com = getsimplecombobox(["首尾", "包含"], item, "condition")
+        self.table.setIndexWidget(self.model.index(row, 1), com)
+        self.table.setIndexWidget(self.model.index(row, 3), self.createacombox(item))
+
+    def createacombox(self, config):
+        com = LFocusCombo()
+        com.addItems(["跳过", "默认", "选择声音"])
+        target = config.get("target", "skip")
+        com.target = target
+        if target == "skip":
+            com.setCurrentIndex(0)
+        elif target == "default":
+            com.setCurrentIndex(1)
+        else:
+            ttsklass, ttsvoice, voicename = target
+            com.addItem(voicename)
+            com.setCurrentIndex(3)
+        com.currentIndexChanged.connect(
+            functools.partial(self.__comchange, com, config)
+        )
+        return com
+
+    def __comchange(self, com: LFocusCombo, config, idx):
+        if idx == 0:
+            com.target = "skip"
+            if com.count() > 3:
+                com.removeItem(com.count() - 1)
+        elif idx == 1:
+            com.target = "default"
+            if com.count() > 3:
+                com.removeItem(com.count() - 1)
+        elif idx == 2:
+            voice = voiceselect(self)
+            if voice.exec():
+                if voice.datas["voice"] is None:
+                    com.setCurrentIndex(1)
+                    return
+                com.target = (
+                    voice.datas["engine"],
+                    voice.datas["voice"],
+                    voice.datas["vis"],
+                )
+                com.blockSignals(True)
+                com.clear()
+                com.addItems(["跳过", "默认", "选择声音", voice.datas["vis"]])
+                com.setCurrentIndex(3)
+                com.blockSignals(False)
+            else:
+                com.setCurrentIndex(1)
+
+    def __init__(self, parent, reflist) -> None:
+        super().__init__(parent, Qt.WindowType.WindowCloseButtonHint)
+
+        self.setWindowTitle("语音指定")
+
+        # self.setWindowModality(Qt.ApplicationModal)
+        self.reflist = reflist
+        formLayout = QVBoxLayout(self)  # 配置layout
+
+        self.model = LStandardItemModel()
+        self.model.setHorizontalHeaderLabels(["正则", "条件", "目标", "指定为"])
+        table = TableViewW(self)
+        table.setModel(self.model)
+        table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        table.horizontalHeader().setSectionResizeMode(
+            3, QHeaderView.ResizeMode.ResizeToContents
+        )
+        table.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.ResizeMode.ResizeToContents
+        )
+        table.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.ResizeMode.ResizeToContents
+        )
+        table.setsimplemenu({"copypaste": False})
 
         self.table = table
         for row, item in enumerate(reflist):
@@ -285,28 +363,16 @@ class noundictconfigdialog2(LDialog):
         button = threebuttons(texts=["添加行", "删除行", "上移", "下移", "立即应用"])
 
         def clicked1():
-            self.reflist.insert(0, {"key": "", "condition": 0, "regex": False})
-
-            self.newline(0, self.reflist[0])
+            self.newline(
+                0, {"key": "", "condition": 0, "regex": False, "target": "skip"}
+            )
 
         button.btn1clicked.connect(clicked1)
 
-        def clicked2():
-            skip = []
-            for index in self.table.selectedIndexes():
-                if index.row() in skip:
-                    continue
-                skip.append(index.row())
-            skip = reversed(sorted(skip))
-
-            for row in skip:
-                self.model.removeRow(row)
-                self.reflist.pop(row)
-
-        button.btn2clicked.connect(clicked2)
+        button.btn2clicked.connect(table.removeselectedrows)
         button.btn5clicked.connect(self.apply)
-        button.btn3clicked.connect(functools.partial(self.moverank, table, -1))
-        button.btn4clicked.connect(functools.partial(self.moverank, table, 1))
+        button.btn3clicked.connect(functools.partial(table.moverank, -1))
+        button.btn4clicked.connect(functools.partial(table.moverank, 1))
         self.button = button
         formLayout.addWidget(table)
         formLayout.addLayout(search)
@@ -316,92 +382,24 @@ class noundictconfigdialog2(LDialog):
         self.show()
 
     def apply(self):
+        self.table.dedumpmodel(2)
         rows = self.model.rowCount()
-        dedump = set()
-        needremoves = []
+        self.reflist.clear()
         for row in range(rows):
             k = self.model.item(row, 2).text()
-
-            if k == "" or k in dedump:
-                needremoves.append(row)
-                continue
-            self.reflist[row].update({"key": k})
-            dedump.add(k)
-        for row in reversed(needremoves):
-            self.model.removeRow(row)
-            self.reflist.pop(row)
+            switch = self.table.indexWidgetX(row, 0)
+            con = self.table.indexWidgetX(row, 1)
+            con2 = self.table.indexWidgetX(row, 3)
+            self.reflist.append(
+                {
+                    "key": k,
+                    "condition": con.currentIndex(),
+                    "regex": switch.isChecked(),
+                    "target": con2.target,
+                }
+            )
 
     def closeEvent(self, a0: QCloseEvent) -> None:
-        self.button.setFocus()
-        self.apply()
-
-
-@Singleton_close
-class regexedit(LDialog):
-    def __init__(self, parent, regexlist) -> None:
-        super().__init__(parent, Qt.WindowType.WindowCloseButtonHint)
-        self.regexlist = regexlist
-        self.setWindowTitle("正则匹配")
-
-        formLayout = QVBoxLayout(self)  # 配置layout
-
-        self.model = LStandardItemModel()
-        self.model.setHorizontalHeaderLabels(["正则"])
-        table = TableViewW(self)
-        table.setModel(self.model)
-
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-
-        self.table = table
-        for row, regex in enumerate(regexlist):
-            self.model.insertRow(row, [QStandardItem(regex)])
-
-        button = threebuttons(texts=["添加行", "删除行", "立即应用"])
-
-        def clicked1():
-            regexlist.insert(0, "")
-            self.model.insertRow(0, [QStandardItem()])
-
-        button.btn1clicked.connect(clicked1)
-
-        def clicked2():
-            skip = []
-            for index in self.table.selectedIndexes():
-                if index.row() in skip:
-                    continue
-                skip.append(index.row())
-            skip = reversed(sorted(skip))
-
-            for row in skip:
-                self.model.removeRow(row)
-                regexlist.pop(row)
-
-        button.btn2clicked.connect(clicked2)
-        button.btn3clicked.connect(self.apply)
-        self.button = button
-        formLayout.addWidget(table)
-        formLayout.addWidget(button)
-        self.resize(QSize(600, 400))
-        self.show()
-
-    def apply(self):
-        rows = self.model.rowCount()
-        dedump = set()
-        needremoves = []
-        for row in range(rows):
-            regex = self.model.item(row, 0).text()
-            if regex == "" or regex in dedump:
-                needremoves.append(row)
-                continue
-
-            self.regexlist[row] = regex
-            dedump.add(regex)
-
-        for row in reversed(needremoves):
-            self.model.removeRow(row)
-            self.regexlist.pop(row)
-
-    def closeEvent(self, _) -> None:
         self.button.setFocus()
         self.apply()
 
@@ -576,9 +574,7 @@ class autoinitdialog(LDialog):
                 lineW.setValue(dd[key])
                 lineW.valueChanged.connect(functools.partial(dd.__setitem__, key))
             elif line["type"] == "split":
-                lineW = QLabel()
-                lineW.setStyleSheet("background-color: gray;")
-                lineW.setFixedHeight(2)
+                lineW = SplitLine()
                 formLayout.addRow(lineW)
                 continue
             refswitch = line.get("refswitch", None)
@@ -681,31 +677,21 @@ class multicolorset(LDialog):
 @Singleton_close
 class postconfigdialog_(LDialog):
     def closeEvent(self, a0: QCloseEvent) -> None:
-        if self.closeevent:
-            self.button.setFocus()
-            self.apply()
-            if self.closecallback:
-                self.closecallback()
+        self.button.setFocus()
+        self.apply()
 
     def apply(self):
+        self.table.dedumpmodel(0)
         rows = self.model.rowCount()
         self.configdict.clear()
 
         if isinstance(self.configdict, dict):
             for row in range(rows):
                 text = self.model.item(row, 0).text()
-                if text == "":
-                    continue
                 self.configdict[text] = self.model.item(row, 1).text()
         elif isinstance(self.configdict, list):
-            dedump = set()
             for row in range(rows):
                 text = self.model.item(row, 0).text()
-                if text == "":
-                    continue
-                if text in dedump:
-                    continue
-                dedump.add(text)
                 item = {}
                 for _i, key in enumerate(self.dictkeys):
                     item[key] = self.model.item(row, _i).text()
@@ -713,14 +699,9 @@ class postconfigdialog_(LDialog):
         else:
             raise
 
-    def __init__(
-        self, parent, configdict, title, headers, closecallback=None, dictkeys=None
-    ) -> None:
+    def __init__(self, parent, configdict, title, headers, dictkeys=None) -> None:
         super().__init__(parent, Qt.WindowType.WindowCloseButtonHint)
-        self.closecallback = closecallback
         self.setWindowTitle(title)
-        # self.setWindowModality(Qt.ApplicationModal)
-        self.closeevent = False
         formLayout = QVBoxLayout(self)  # 配置layout
         self.dictkeys = dictkeys
         model = LStandardItemModel(len(configdict), 1, self)
@@ -747,37 +728,18 @@ class postconfigdialog_(LDialog):
         table.setModel(model)
         table.setWordWrap(False)
         table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        # table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        # table.clicked.connect(self.show_info)
-        button = threebuttons(texts=["添加行", "删除行", "立即应用"])
+        table.setsimplemenu()
+        button = threebuttons(texts=["添加行", "删除行", "上移", "下移", "立即应用"])
+        self.table = table
+        button.btn1clicked.connect(table.insertplainrow)
+        button.btn2clicked.connect(table.removeselectedrows)
 
-        def clicked1():
-            if isinstance(configdict, dict):
-                model.insertRow(0, [QStandardItem(), QStandardItem()])
-            elif isinstance(configdict, list):
-                model.insertRow(0, [QStandardItem() for _ in range(len(dictkeys))])
-            else:
-                raise
-
-        button.btn1clicked.connect(clicked1)
-
-        def clicked2():
-            skip = []
-            for index in table.selectedIndexes():
-                if index.row() in skip:
-                    continue
-                skip.append(index.row())
-            skip = reversed(sorted(skip))
-
-            for row in skip:
-                model.removeRow(row)
-
-        button.btn2clicked.connect(clicked2)
-        button.btn3clicked.connect(self.apply)
+        button.btn3clicked.connect(functools.partial(table.moverank, -1))
+        button.btn4clicked.connect(functools.partial(table.moverank, 1))
+        button.btn5clicked.connect(self.apply)
         self.button = button
         self.model = model
         self.configdict = configdict
-        self.closeevent = True
         search = QHBoxLayout()
         searchcontent = QLineEdit()
         search.addWidget(searchcontent)
@@ -808,3 +770,7 @@ class postconfigdialog_(LDialog):
 
 def postconfigdialog(parent, configdict, title, header):
     postconfigdialog_(parent, configdict, title, header)
+
+
+def postconfigdialog2x(parent, reflist, title, header):
+    noundictconfigdialog1(parent, reflist, title, header)

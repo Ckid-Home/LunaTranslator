@@ -50,15 +50,6 @@ def grabwindow(app="PNG", callback_origin=None):
             callback(fname + "_winrt_magpie." + app)
 
         _()
-    hwnd = windows.FindWindow("LosslessScaling", None)
-    if hwnd:
-
-        @threader
-        def _():
-            winrtutils._winrt_capture_window(fname + "_winrt_lossless." + app, hwnd)
-            callback(fname + "_winrt_lossless." + app)
-
-        _()
     try:
         hwnd = gobject.baseobject.textsource.hwnd
         if not hwnd:
@@ -87,26 +78,24 @@ def grabwindow(app="PNG", callback_origin=None):
         _()
 
 
-def getprocesslist():
-
-    pids = windows.EnumProcesses()
-    return pids
-
-
 def getpidexe(pid):
-    hwnd1 = windows.AutoHandle(
+    hproc = windows.AutoHandle(
         windows.OpenProcess(windows.PROCESS_ALL_ACCESS, False, pid)
     )
-    if not hwnd1:
+    if not hproc:
 
-        hwnd1 = windows.OpenProcess(
+        hproc = windows.OpenProcess(
             windows.PROCESS_QUERY_LIMITED_INFORMATION, False, pid
         )
-    if not hwnd1:
+    if not hproc:
         name_ = None
     else:
-        name_ = windows.GetProcessFileName(hwnd1)
+        name_ = windows.GetProcessFileName(hproc)
     return name_
+
+
+def getcurrexe():
+    return os.environ.get("LUNA_EXE_NAME", "")
 
 
 def test_injectable_1(pid):
@@ -124,37 +113,34 @@ def test_injectable(pids):
     return True
 
 
-def ListProcess(filt=True):
-    ret = []
-    pids = getprocesslist()
-    for pid in pids:
+def ListProcess(exe=None):
+    ret = {}
+    for pid, exebase in winsharedutils.Getprcesses():
         if os.getpid() == pid:
             continue
         try:
+            if exe is not None:
+                if exebase.lower() != os.path.basename(exe).lower():
+                    continue
             name_ = getpidexe(pid)
             if name_ is None:
                 continue
             name = name_.lower()
-            if filt:
+            if exe is None:
                 if (
                     ":\\windows\\" in name
                     or "\\microsoft\\" in name
                     or "\\windowsapps\\" in name
                 ):
                     continue
-            ret.append([pid, name_])
+            if name_ not in ret:
+                ret[name_] = []
+            ret[name_].append(pid)
         except:
             pass
-    kv = {}
-    for pid, exe in ret:
-        if exe not in kv:
-            kv[exe] = []
-
-        kv[exe].append(pid)
-    xxx = []
-    for exe in kv:
-        xxx.append([kv[exe], exe])
-    return xxx
+    if exe is None:
+        return ret
+    return ret.get(exe, [])
 
 
 def getExeIcon(name, icon=True, cache=False):

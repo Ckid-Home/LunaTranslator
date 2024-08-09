@@ -1,5 +1,5 @@
 import requests
-import time, os
+from urllib.parse import urljoin
 from tts.basettsclass import TTSbase
 from urllib.parse import quote
 
@@ -7,28 +7,25 @@ from urllib.parse import quote
 class TTS(TTSbase):
     def getvoicelist(self):
         responseVits = requests.get(
-            f"http://127.0.0.1:{self.config['Port']}/voice/speakers"
+            urljoin(self.config["URL"], self.config["voices"])
         ).json()
-        self.voicelist = []
-
-        # 获取所有模型类型，对于每个模型类型下的模型信息，将其 modelType、id、name 合成一个字符串
+        voicelist = []
+        internal = []
         modelTypes = responseVits.keys()
         for modelType in modelTypes:
             vits_data = responseVits[modelType]
             for item in vits_data:
                 model_info = f'{modelType}_{item["id"]}_{item["name"]}'
-                self.voicelist.append(model_info)
-        return self.voicelist
+                voicelist.append(model_info)
+                internal.append((modelType, item["id"], item["name"]))
+        return internal, voicelist
 
-    def voiceshowmap(self, voice):
-        return voice
-
-    def speak(self, content, rate, voice, voiceidx):
+    def speak(self, content, rate, voice):
         encoded_content = quote(content)
-        idx = int(voice.split("_")[1])
-        model = str.lower(voice.split("_")[0])
-        response = requests.get(
-            f"http://127.0.0.1:{self.config['Port']}/voice/{model}?text={encoded_content}&id={idx}&lang=auto&prompt_lang=auto&format=wav&preset={self.config['preset']}"
-        ).content
+        model, idx, _ = voice
+        speak = self.config["speak"].format(
+            model_lower=model.lower(), model=model, id=idx, text=encoded_content
+        )
+        response = requests.get(urljoin(self.config["URL"], speak)).content
 
         return response

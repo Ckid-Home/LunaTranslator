@@ -46,8 +46,16 @@ class baseocr(commonbase):
             for box in boxs
         ]
 
+    def guessvertial(self, boxs):
+        whs = 1
+        for x1, y1, x2, y2 in boxs:
+            w = x2 - x1
+            h = y2 - y1
+            whs *= w / h
+        return whs < 1
+
     def common_solve_text_orientation(self, boxs, texts):
-        vertical = globalconfig["verticalocr"]
+        vertical = int(globalconfig["verticalocr"])
 
         def norm48(box):
             return (
@@ -59,6 +67,10 @@ class baseocr(commonbase):
 
         boxs = [norm48(box) if len(box) == 8 else box for box in boxs]
 
+        if vertical == 2:
+            vertical = self.guessvertial(boxs)
+        else:
+            vertical = vertical != 0
         # print(list(zip(boxs,texts)))
 
         mids = [((box[0] + box[2]) / 2, (box[1] + box[3]) / 2) for box in boxs]

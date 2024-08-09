@@ -5,6 +5,7 @@ from qtsymbols import *
 class LLabel(QLabel):
     def __init__(self, *argc):
         self.__s = None
+        self._ToolTip = None
         if len(argc) == 1:
             if isinstance(argc[0], str):
                 self.__s = argc[0]
@@ -21,6 +22,12 @@ class LLabel(QLabel):
     def updatelangtext(self):
         if self.__s:
             super().setText(_TR(self.__s))
+        if self._ToolTip:
+            super().setToolTip(_TR(self._ToolTip))
+
+    def setToolTip(self, t):
+        self._ToolTip = t
+        super().setToolTip(_TR(t))
 
 
 class LMessageBox(QMessageBox):
@@ -144,6 +151,14 @@ class LFormLayout(QFormLayout):
                 text = LLabel(text)
                 argc = text, widget
         super().addRow(*argc)
+
+    def insertRow(self, row, *argc):
+        if len(argc) == 2:
+            text, widget = argc
+            if isinstance(text, str):
+                text = LLabel(text)
+                argc = text, widget
+        super().insertRow(row, *argc)
 
 
 class LDialog(QDialog):

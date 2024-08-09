@@ -84,6 +84,7 @@ class TextBrowser(QWidget, dataget):
     @threader
     def trackingthread(self):
         pos = gobject.baseobject.translation_ui.pos()
+        gobject.baseobject.translation_ui._move_drag = True
         cus = QCursor.pos()
         while True:
             keystate = windows.GetKeyState(windows.VK_LBUTTON)
@@ -93,6 +94,7 @@ class TextBrowser(QWidget, dataget):
                 pos + QCursor.pos() - cus
             )
             time.sleep(0.01)
+        gobject.baseobject.translation_ui._move_drag = False
 
     def extrahandle(self, orig, hwnd, msg, wp, lp):
         if wp == windows.WM_LBUTTONDOWN:
@@ -109,13 +111,19 @@ class TextBrowser(QWidget, dataget):
         if not isinstance(self.webivewwidget, WebivewWidget):
             return
         self.isfirst = False
-        self.__loadextra(0)
-        self.webivewwidget.on_load.connect(self.__loadextra)
+        self.loadextra(0)
+        self.webivewwidget.on_load.connect(self.loadextra)
 
-    def __loadextra(self, _):
-        if os.path.exists("userconfig/extrahtml.html"):
-            with open("userconfig/extrahtml.html", "r", encoding="utf8") as ff:
+    def loadextra(self, _):
+        for _ in [
+            "userconfig/extrahtml.html",
+            r"LunaTranslator\rendertext\exampleextrahtml.html",
+        ]:
+            if not os.path.exists(_):
+                continue
+            with open(_, "r", encoding="utf8") as ff:
                 self.set_extra_html(ff.read())
+            break
 
     def debugeval(self, js):
         # print(js)
@@ -130,6 +138,9 @@ class TextBrowser(QWidget, dataget):
         self.debugeval(f"clear_all()")
 
     def set_extra_html(self, html):
+        if not globalconfig["useextrahtml"]:
+            self.debugeval(f'set_extra_html("")')
+            return
         html = quote(html)
         self.debugeval(f'set_extra_html("{html}")')
 

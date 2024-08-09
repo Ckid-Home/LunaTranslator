@@ -2,13 +2,13 @@
 
 #### **1. 专有名词翻译 直接替换**
 
-这种方法会在翻译之前，直接用译文将原文进行替换。
+这种方法会在翻译之前，直接用译文将原文进行替换。支持使用`正则` `转义`进行更复杂的替换。
 
 当游戏从VNDB加载元数据时，会查询游戏中的人名信息作为预设的词典。不过译文由于VNDB的原因是英文，可以自行进行修改译文成中文。
 
 <details>
   <summary>示例</summary>
-  <img src="https://image.lunatranslator.xyz/zh/transoptimi/1.png">
+  <img src="https://image.lunatranslator.org/zh/transoptimi/1.png">
 </details>
 
 #### **2. 专有名词翻译 占位符**
@@ -20,9 +20,9 @@
 <details>
   <summary>示例</summary>
   建议使用：
-  <img src="https://image.lunatranslator.xyz/zh/transoptimi/2.png">
+  <img src="https://image.lunatranslator.org/zh/transoptimi/2.png">
   而不是：
-  <img src="https://image.lunatranslator.xyz/zh/transoptimi/3.png">
+  <img src="https://image.lunatranslator.org/zh/transoptimi/3.png">
 </details>
 
 
@@ -34,7 +34,7 @@
 
 <details>
   <summary>示例</summary>
-  <img src="https://image.lunatranslator.xyz/zh/transoptimi/4.png">
+  <img src="https://image.lunatranslator.org/zh/transoptimi/4.png">
 </details>
 
 #### **4. 翻译结果修正**
@@ -44,3 +44,10 @@
 #### **5. VNR共享辞书**
 
 用以支持VNR的共享辞书格式，不推荐使用。
+
+
+## 游戏专用翻译优化
+
+在`游戏设置`->`翻译优化`中，若取消激活跟随默认，则会使用游戏专用的翻译优化设置。
+
+若激活`继承默认`，则在游戏专用翻译优化的词典之外，也会同时使用默认的全局词典。

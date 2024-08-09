@@ -17,7 +17,7 @@ import os
 import gobject, functools
 from traceback import print_exc
 from qtsymbols import *
-from gui.usefulwidget import LFocusCombo, getboxlayout
+from gui.usefulwidget import LFocusCombo, getboxlayout, getQMessageBox
 from gui.dynalang import LPushButton, LFormLayout, LLabel
 
 
@@ -135,10 +135,12 @@ def getallsupports():
 
 def dodownload(combo: QComboBox, allsupports: list):
     lang = allsupports[combo.currentIndex()]
-    gobject.baseobject.openlink(dynamiclink("{main_server}/Resource/ocr_models/" + lang + ".zip"))
+    gobject.baseobject.openlink(
+        dynamiclink("{main_server}/Resource/ocr_models/" + lang + ".zip")
+    )
 
 
-def doinstall(combo: QComboBox, allsupports: list, parent, callback):
+def doinstall(self, combo: QComboBox, allsupports: list, parent, callback):
     lang = allsupports[combo.currentIndex()]
     f = QFileDialog.getOpenFileName(parent, filter=lang + ".zip")
     fn = f[0]
@@ -147,8 +149,7 @@ def doinstall(combo: QComboBox, allsupports: list, parent, callback):
     try:
         with zipfile.ZipFile(fn) as zipf:
             zipf.extractall("files/ocr")
-
-        gobject.baseobject.showtraymessage("", "安装成功")
+        getQMessageBox(self, "成功", "安装成功")
         callback()
     except:
         print_exc()
@@ -179,7 +180,7 @@ def question(dialog: QDialog):
     btndownload.clicked.connect(functools.partial(dodownload, combo, allsupports))
     btninstall = LPushButton("添加")
     btninstall.clicked.connect(
-        functools.partial(doinstall, combo, allsupports, dialog, callback)
+        functools.partial(doinstall, dialog, combo, allsupports, dialog, callback)
     )
     formLayout.addRow(
         "添加语言包",
@@ -226,7 +227,7 @@ class OCR(baseocr):
 
         pss, texts = self._ocr.ocr(
             imagebinary,
-            globalconfig["verticalocr"],
+            0,
         )
 
         return self.common_solve_text_orientation(pss, texts)

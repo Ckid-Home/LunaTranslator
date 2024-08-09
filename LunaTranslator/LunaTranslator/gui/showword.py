@@ -19,7 +19,10 @@ from gui.usefulwidget import (
     getspinbox,
     getsimplecombobox,
     getlineedit,
+    listediter,
     listediterline,
+    FQPlainTextEdit,
+    FQLineEdit,
     getsimpleswitch,
     makesubtab_lazy,
     getIconButton,
@@ -170,9 +173,9 @@ class AnkiWindow(QWidget):
                 margin0=True,
             )
         )
-        self.fronttext = QPlainTextEdit()
-        self.backtext = QPlainTextEdit()
-        self.csstext = QPlainTextEdit()
+        self.fronttext = FQPlainTextEdit()
+        self.backtext = FQPlainTextEdit()
+        self.csstext = FQPlainTextEdit()
         edittemptab.addTab(self.fronttext, "正面")
         edittemptab.addTab(self.backtext, "背面")
         edittemptab.addTab(self.csstext, "样式")
@@ -198,9 +201,7 @@ class AnkiWindow(QWidget):
         example = self.example.toPlainText()
         if globalconfig["ankiconnect"]["boldword"]:
             if self.example.hiras is None:
-                self.example.hiras = gobject.baseobject.translation_ui.parsehira(
-                    example
-                )
+                self.example.hiras = gobject.baseobject.parsehira(example)
             collect = []
             for hira in self.example.hiras:
                 if hira["orig"] == word or hira.get("origorig", None) == word:
@@ -329,6 +330,20 @@ class AnkiWindow(QWidget):
             "例句中加粗单词",
             getsimpleswitch(globalconfig["ankiconnect"], "boldword"),
         )
+        layout.addRow(
+            "不添加辞书",
+            getIconButton(self.vistranslate_rank, "fa.gear"),
+        )
+
+    def vistranslate_rank(self):
+        listediter(
+            self,
+            "不添加辞书",
+            "不添加辞书",
+            globalconfig["ignoredict"],
+            candidates=list(globalconfig["cishu"].keys()),
+            namemapfunction=lambda k: globalconfig["cishu"][k]["name"],
+        )
 
     def startorendrecord(self, target: QLineEdit, idx):
         if idx == 1:
@@ -360,14 +375,14 @@ class AnkiWindow(QWidget):
         self.editpath.setReadOnly(True)
         self.viewimagelabel = QLabel()
         self.editpath.textChanged.connect(self.wrappedpixmap)
-        self.example = QPlainTextEdit()
+        self.example = FQPlainTextEdit()
         self.example.hiras = None
 
         def __():
             self.example.hiras = None
 
         self.example.textChanged.connect(__)
-        self.remarks = QPlainTextEdit()
+        self.remarks = FQPlainTextEdit()
         recordbtn1 = statusbutton(icons=["fa.microphone", "fa.stop"], colors=["", ""])
         recordbtn1.statuschanged.connect(
             functools.partial(self.startorendrecord, self.audiopath)
@@ -495,7 +510,7 @@ class AnkiWindow(QWidget):
         if text and len(text):
             self.ruby = quote(
                 json.dumps(
-                    gobject.baseobject.translation_ui.parsehira(text),
+                    gobject.baseobject.parsehira(text),
                     ensure_ascii=False,
                 )
             )
@@ -634,13 +649,6 @@ class CustomTabBar(LTabBar):
         return self.savesizehint
 
 
-class QLineEdit1(QLineEdit):
-    def mousePressEvent(self, a0: qtawesome.QMouseEvent) -> None:
-        # 点击浏览器后，无法重新获取焦点。
-        windows.SetFocus(int(self.winId()))
-        return super().mousePressEvent(a0)
-
-
 class searchwordW(closeashidewindow):
     search_word = pyqtSignal(str, bool)
     show_dict_result = pyqtSignal(float, str, str)
@@ -704,14 +712,17 @@ class searchwordW(closeashidewindow):
         ww.setLayout(self.vboxlayout)
         self.searchlayout = QHBoxLayout()
         self.vboxlayout.addLayout(self.searchlayout)
-        self.searchtext = QLineEdit1()
+        self.searchtext = FQLineEdit()
         self.searchtext.textChanged.connect(self.ankiwindow.reset)
-
-        self.history_last_btn = QPushButton(qtawesome.icon("fa.arrow-left"), "")
+        self.history_last_btn = statusbutton(
+            icons=["fa.arrow-left", "fa.arrow-left"], colors=["", ""]
+        )
         self.history_last_btn.clicked.connect(
             functools.partial(self.__move_history_search, -1)
         )
-        self.history_next_btn = QPushButton(qtawesome.icon("fa.arrow-right"), "")
+        self.history_next_btn = statusbutton(
+            icons=["fa.arrow-right", "fa.arrow-right"], colors=["", ""]
+        )
         self.history_next_btn.clicked.connect(
             functools.partial(self.__move_history_search, 1)
         )
@@ -723,6 +734,7 @@ class searchwordW(closeashidewindow):
         self.searchlayout.addWidget(self.history_next_btn)
         self.searchlayout.addWidget(self.searchtext)
         searchbutton = QPushButton(qtawesome.icon("fa.search"), "")
+        self.searchtext.returnPressed.connect(searchbutton.clicked.emit)
 
         searchbutton.clicked.connect(self.__search_by_click_search_btn)
         self.searchlayout.addWidget(searchbutton)
@@ -735,6 +747,10 @@ class searchwordW(closeashidewindow):
             icons=["fa.adn", "fa.adn"], colors=["", globalconfig["buttoncolor2"]]
         )
         ankiconnect.statuschanged.connect(self.onceaddankiwindow)
+        ankiconnect.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        ankiconnect.customContextMenuRequested.connect(
+            lambda _: self.ankiwindow.errorwrap()
+        )
         self.searchlayout.addWidget(ankiconnect)
 
         self.tab = CustomTabBar()
@@ -783,9 +799,12 @@ class searchwordW(closeashidewindow):
         res = []
         tabks = []
         for k, v in self.cache_results.items():
+            if k in globalconfig["ignoredict"]:
+                continue
             if len(v) == 0:
                 continue
             thisp = self.thisps.get(k, 0)
+
             idx = 0
             for i in tabks:
                 if i >= thisp:
