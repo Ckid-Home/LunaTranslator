@@ -417,10 +417,11 @@ namespace
         {
             return buffer->clear();
         }
-        s = re::sub(s, L"\n+", L" ");
+        s = re::sub(s, L"\n\n+", L"\n");
 
         s = re::sub(s, L"\\$\\{FirstName\\}", L"ナーヤ");
-
+        s = re::sub(s, LR"(#C\(TR,\w+\))");
+        s = re::sub(s, L"#P\\(\\d+,\\d+\\)");
         if (startWith(s, L"#T"))
         {
             s = re::sub(s, L"#T2[^#]+");
@@ -636,7 +637,10 @@ namespace
             return buffer->clear(); // chaos on first load.
         StringCharReplacer(buffer, TEXTANDLEN(L"<br>"), '\n');
     }
-
+    void F0100DC1021662000(TextBuffer *buffer, HookParam *hp)
+    {
+        StringFilter(buffer, TEXTANDLEN(L"\\n"));
+    }
     void F010076902126E000(TextBuffer *buffer, HookParam *hp)
     {
         StringFilter(buffer, TEXTANDLEN("<br>"));
@@ -2490,6 +2494,21 @@ namespace
         StringFilter(buffer, TEXTANDLEN(L"\n　"));
         CharFilter(buffer, L'\n');
     }
+    std::wstring F0100D4601FD60000S;
+    void F0100D4601FD60000_1(TextBuffer *buffer, HookParam *)
+    {
+        if (buffer->strW() == F0100D4601FD60000S)
+            return buffer->clear();
+    }
+    void F0100D4601FD60000(TextBuffer *buffer, HookParam *)
+    {
+        auto s = buffer->strW();
+        F0100D4601FD60000S = s;
+        s = re::sub(s, L"<color=.*?>(.*?)<\\/color>", L"$1");
+        buffer->from(s);
+        StringFilter(buffer, TEXTANDLEN(L"\n　"));
+        CharFilter(buffer, L'\n');
+    }
     void NewLineCharFilterW(TextBuffer *buffer, HookParam *)
     {
         CharFilter(buffer, L'\n');
@@ -2514,6 +2533,14 @@ struct emfuncinfoX
     emfuncinfo info;
 };
 static const emfuncinfoX emfunctionhooks_1[] = {
+    // 蒼黒の楔 ～緋色の欠片 玉依姫奇譚～
+    {0x832C63F8, {CODEC_UTF16, 1, 0x14, 0, F0100D4601FD60000, 0x0100D4601FD60000ull, "1.0.0"}},
+    {0x832763B0, {CODEC_UTF16, 1, 0x14, 0, F0100D4601FD60000_1, 0x0100D4601FD60000ull, "1.0.0"}}, // 过场独白
+    // 緋色の欠片 玉依姫奇譚 ～おもいいろの記憶～
+    {0x81922ce8, {CODEC_UTF16, 0, 0x14, 0, F0100EC001DE7E000, 0x0100EC001DE7E000ull, "1.0.0"}},
+    // BYAKKO ～四神部隊炎恋記～
+    {0x801051CC, {CODEC_UTF8, 1, 0, 0, F010099901461A000, 0x0100C30020F70000ull, "1.0.0"}},
+    {0x80034D08, {CODEC_UTF8, 0, 0, 0, 0, 0x0100C30020F70000ull, "1.0.0"}},
     // LoveR Kiss
     {0x80184F60, {CODEC_UTF8, 0, 0, 0, 0, 0x01007250089F8000ull, "1.0.0"}},
     // あやかしごはん ～おおもりっ！～ for S
@@ -2590,6 +2617,9 @@ static const emfuncinfoX emfunctionhooks_1[] = {
     // マツリカの炯-kEi- 天命胤異伝
     {0x8017ad54, {CODEC_UTF32, 1, 0, 0, F0100EA001A626000, 0x0100EA001A626000ull, "1.0.0"}}, // text
     {0x80174d4c, {CODEC_UTF32, 1, 0, 0, F0100EA001A626000, 0x0100EA001A626000ull, "1.0.0"}}, // name
+    // 茉莉花之炯 天命胤異傳
+    {0x80138DFC, {CODEC_UTF32, 1, 0, 0, F0100EA001A626000, 0x0100F5A01EA12000ull, "1.0.0"}}, // text
+    {0x801769CC, {CODEC_UTF32, 0, 0, 0, F0100EA001A626000, 0x0100F5A01EA12000ull, "1.0.0"}}, // name
     // キューピット・パラサイト
     {0x80057910, {CODEC_UTF32, 2, 0, 0, F0100F7E00DFC8000, 0x0100F7E00DFC8000ull, "1.0.1"}}, // name + text
     {0x80169df0, {CODEC_UTF32, 0, 0, 0, F0100F7E00DFC8000, 0x0100F7E00DFC8000ull, "1.0.1"}}, // choice
@@ -3438,8 +3468,6 @@ static const emfuncinfoX emfunctionhooks_1[] = {
     // 大正×対称アリス HEADS&TAILS
     {0x8009bb3c, {CODEC_UTF16, 1, 0, 0, F0100B1F0123B6000, 0x0100B1F0123B6000ull, "2.0.0"}},
     {0x8009bc58, {CODEC_UTF16, 1, 0, 0, F0100B1F0123B6000, 0x0100B1F0123B6000ull, "2.0.0"}},
-    // 緋色の欠片 玉依姫奇譚 ～おもいいろの記憶～
-    {0x81922ce8, {CODEC_UTF16, 0, 0x14, 0, F0100EC001DE7E000, 0x0100EC001DE7E000ull, "1.0.0"}},
     // 幻想マネージュ
     {0x8124f690, {CODEC_UTF16, 0, 0x14, 0, F010037500DF38000, 0x010037500DF38000ull, "1.0.4"}},
     {0x811f63f0, {CODEC_UTF16, 0, 0x14, 0, F010037500DF38000, 0x010037500DF38000ull, "1.0.4"}},
@@ -3859,6 +3887,9 @@ static const emfuncinfoX emfunctionhooks_1[] = {
     // DYNAMIC CHORD feat.[rēve parfait]
     {0x81a48614, {CODEC_UTF8, 1, 0, 0, F010076902126E000, 0x010076902126E000ull, "1.0.0"}},
     {0x81a5d890, {CODEC_UTF8, 1, 0, 0, F010076902126E000, 0x010076902126E000ull, "1.0.0"}},
+    // 夏目友人帳 ～葉月の記～
+    {0x8187D0CC, {CODEC_UTF16, 0, 0X14, 0, F0100DC1021662000, 0x0100DC1021662000ull, "1.0.0"}},
+    {0x8188DA38, {CODEC_UTF16, 0, 0X14, 0, F0100DC1021662000, 0x0100DC1021662000ull, "1.0.1"}},
 
 };
 

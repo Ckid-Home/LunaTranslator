@@ -25,6 +25,9 @@ For games that are not supported, please send an [issue](https://lunatranslator.
 
 |  | ID       | Game                |
 | ---- | ---------- | ------------------- |
+|  | 0100D4601FD60000 | 蒼黒の楔 ～緋色の欠片 玉依姫奇譚～ |
+|  | 0100EC001DE7E000 | 緋色の欠片 玉依姫奇譚 ～おもいいろの記憶～ |
+|  | 0100C30020F70000 | BYAKKO ～四神部隊炎恋記～ |
 |  | 01007250089F8000 | LoveR Kiss |
 |  | 01001A4021670000 | あやかしごはん ～おおもりっ！～ for S |
 |  | 0100E9801CAC2000 | OVER REQUIEMZ |
@@ -49,6 +52,7 @@ For games that are not supported, please send an [issue](https://lunatranslator.
 |  | 01006590155AC000 | さくらの雲＊スカアレットの恋 |
 |  | 01000200194AE000 | マジェスティック☆マジョリカル |
 |  | 0100EA001A626000 | マツリカの炯-kEi- 天命胤異伝 |
+|  | 0100F5A01EA12000 | 茉莉花之炯 天命胤異傳 |
 |  | 0100F7E00DFC8000 | キューピット・パラサイト |
 |  | 0100925014864000 | ラディアンテイル |
 |  | 01000130150FA000 | MUSICUS |
@@ -223,7 +227,6 @@ For games that are not supported, please send an [issue](https://lunatranslator.
 |  | 010095E01581C000 | even if TEMPEST 宵闇にかく語りき魔女 |
 |  | 010096000CA38000 | 大正×対称アリス all in one |
 |  | 0100B1F0123B6000 | 大正×対称アリス HEADS&TAILS |
-|  | 0100EC001DE7E000 | 緋色の欠片 玉依姫奇譚 ～おもいいろの記憶～ |
 |  | 010037500DF38000 | 幻想マネージュ |
 |  | 010079200C26E000 | 幻奏喫茶アンシャンテ |
 |  | 01002C00177AE000 | 天獄ストラグル -strayside- |
@@ -348,6 +351,7 @@ For games that are not supported, please send an [issue](https://lunatranslator.
 |  | 0100451020714000 | 幻想牢獄のカレイドスコープ２ |
 |  | 01002080191CE000 | 戦場の円舞曲 for Nintendo Switch |
 |  | 010076902126E000 | DYNAMIC CHORD feat.[rēve parfait] |
+|  | 0100DC1021662000 | 夏目友人帳 ～葉月の記～ |
 
 == PSP
 
@@ -835,6 +839,11 @@ For games that are not supported, please send an [issue](https://lunatranslator.
 
 |  | ID       | Game                |
 | ---- | ---------- | ------------------- |
+|  | SLPM-62207 | SIMPLE2000シリーズ Vol.9 THE 恋愛アドベンチャー ～BITTERSWEET FOOLS～ |
+|  | SLPM-55006 | あかね色に染まる坂 ぱられる |
+|  | SLPS-25581 | SIMPLE 2000シリーズ Vol.92 THE 呪いのゲーム |
+|  | SLPS-20196 | 赤川次郎ミステリー月の光　 ～沈める鐘の殺人～ |
+|  | SLPS-25081 | 最終電車 |
 |  | SLPS-25276 | 夏夢夜話 |
 |  | SLPM-65684 | マイネリーベ 優美なる記憶 |
 |  | SLPM-66247 | マイネリーベⅡ ～誇りと正義と愛～ |
