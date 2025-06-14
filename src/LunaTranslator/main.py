@@ -107,11 +107,11 @@ def prepareqtenv():
 
 def loadmainui(startwithgameuid):
     import gobject
-    from LunaTranslator import MAINUI
+    from LunaTranslator import BASEOBJECT
 
-    gobject.baseobject = MAINUI()
-    gobject.baseobject.loadui(startwithgameuid)
-    # gobject.baseobject.urlprotocol()
+    gobject.base = BASEOBJECT()
+    gobject.base.loadui(startwithgameuid)
+    # gobject.base.urlprotocol()
 
 
 def checklang():
@@ -195,10 +195,12 @@ def urlprotocol():
     parser = argparse.ArgumentParser()
     parser.add_argument("--URLProtocol", required=False)
     parser.add_argument("--Exec", required=False)
+    parser.add_argument("--test", required=False, action="store_true")
     try:
         args = parser.parse_args()
         URLProtocol: str = args.URLProtocol
         Exec: str = args.Exec
+        gobject.istest = args.test
         if URLProtocol:
             print(URLProtocol)
             result = urlsplit(URLProtocol)
@@ -224,7 +226,7 @@ if __name__ == "__main__":
     from qtsymbols import QApplication
 
     app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(False)
+    # app.setQuitOnLastWindowClosed(False)
     checklang()
     checkintegrity()
     loadmainui(urlprotocol())

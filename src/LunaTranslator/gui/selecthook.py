@@ -122,7 +122,7 @@ class PatternValidator(QValidator):
 class searchhookparam(LDialog):
     @property
     def textsource(self) -> texthook:
-        return gobject.baseobject.textsource
+        return gobject.base.textsource
 
     def safehex(self, string: str, default):
         try:
@@ -224,15 +224,9 @@ class searchhookparam(LDialog):
         return super().showEvent(a0)
 
     def __init__(self, parent) -> None:
-        super().__init__(parent, Qt.WindowType.WindowCloseButtonHint)
-        windows.SetWindowPos(
-            int(int(self.winId())),
-            windows.HWND_TOPMOST,
-            0,
-            0,
-            0,
-            0,
-            windows.SWP_NOACTIVATE | windows.SWP_NOSIZE | windows.SWP_NOMOVE,
+        super().__init__(
+            parent,
+            Qt.WindowType.WindowCloseButtonHint | Qt.WindowType.WindowStaysOnTopHint,
         )
         self.setWindowTitle("搜索设置")
         mainlayout = QVBoxLayout(self)
@@ -241,12 +235,12 @@ class searchhookparam(LDialog):
 
         layout1 = QHBoxLayout()
         layout1.addWidget(LLabel("代码页"))
-        if savehook_new_data[gobject.baseobject.gameuid].get(
+        if savehook_new_data[gobject.base.gameuid].get(
             "hooksetting_follow_default", True
         ):
             cp = globalconfig["codepage_value"]
         else:
-            cp = savehook_new_data[gobject.baseobject.gameuid][
+            cp = savehook_new_data[gobject.base.gameuid][
                 "hooksetting_private"
             ].get("codepage_value", globalconfig["codepage_value"])
         self.codepagesave = {"spcp": cp}
@@ -443,10 +437,14 @@ class hookselect(closeashidewindow):
 
     @property
     def textsource(self) -> texthook:
-        return gobject.baseobject.textsource
+        return gobject.base.textsource
 
     def __init__(self, parent):
-        super(hookselect, self).__init__(parent, globalconfig["selecthookgeo"])
+        super(hookselect, self).__init__(
+            parent,
+            globalconfig["selecthookgeo"]
+        )
+        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint)
         self.setupUi()
         self.hidesearchhookbuttons()
         self.firsttimex = True
@@ -572,11 +570,11 @@ class hookselect(closeashidewindow):
         if _isusing:
 
             if hn[:8] == "UserHook":
-                needinserthookcode = savehook_new_data[gobject.baseobject.gameuid].get(
+                needinserthookcode = savehook_new_data[gobject.base.gameuid].get(
                     "needinserthookcode", []
                 )
                 needinserthookcode = list(set(needinserthookcode + [hc]))
-                savehook_new_data[gobject.baseobject.gameuid].update(
+                savehook_new_data[gobject.base.gameuid].update(
                     {"needinserthookcode": needinserthookcode}
                 )
             else:
@@ -587,20 +585,20 @@ class hookselect(closeashidewindow):
         hc, hn, tp = key
         self.textsource.Luna_UseEmbed(tp, use)
         _use = self._check_tp_using(key)
-        if "embedablehook" not in savehook_new_data[gobject.baseobject.gameuid]:
-            savehook_new_data[gobject.baseobject.gameuid]["embedablehook"] = []
+        if "embedablehook" not in savehook_new_data[gobject.base.gameuid]:
+            savehook_new_data[gobject.base.gameuid]["embedablehook"] = []
         if _use:
-            savehook_new_data[gobject.baseobject.gameuid]["embedablehook"].append(
+            savehook_new_data[gobject.base.gameuid]["embedablehook"].append(
                 [hc, tp.addr, tp.ctx, tp.ctx2]
             )
         else:
             save = []
-            for _ in savehook_new_data[gobject.baseobject.gameuid]["embedablehook"]:
+            for _ in savehook_new_data[gobject.base.gameuid]["embedablehook"]:
                 hc, ad, c1, c2 = _
                 if (hc, 0, c1, c2) == (hc, 0, tp.ctx, tp.ctx2):
                     save.append(_)
             for _ in save:
-                savehook_new_data[gobject.baseobject.gameuid]["embedablehook"].remove(_)
+                savehook_new_data[gobject.base.gameuid]["embedablehook"].remove(_)
 
     def setupUi(self):
         self.widget = QWidget()
@@ -740,17 +738,17 @@ class hookselect(closeashidewindow):
             self.textsource.Luna_RemoveHook(tp.processId, tp.addr)
             if hn[:8] == "UserHook":
                 try:
-                    savehook_new_data[gobject.baseobject.gameuid][
+                    savehook_new_data[gobject.base.gameuid][
                         "needinserthookcode"
                     ].remove(hc)
                 except:
                     pass
             if action == removeforever:
-                removeforeverhook = savehook_new_data[gobject.baseobject.gameuid].get(
+                removeforeverhook = savehook_new_data[gobject.base.gameuid].get(
                     "removeforeverhook", []
                 )
                 removeforeverhook = list(set(removeforeverhook + [hc]))
-                savehook_new_data[gobject.baseobject.gameuid].update(
+                savehook_new_data[gobject.base.gameuid].update(
                     {"removeforeverhook": removeforeverhook}
                 )
         elif action == copy:
@@ -758,13 +756,13 @@ class hookselect(closeashidewindow):
 
     def opensolvetext(self):
         try:
-            dialog_setting_game(self, gobject.baseobject.gameuid, 3)
+            dialog_setting_game(self, gobject.base.gameuid, 3)
         except:
             print_exc()
 
     def opengamesetting(self):
         try:
-            dialog_setting_game(self, gobject.baseobject.gameuid, 1)
+            dialog_setting_game(self, gobject.base.gameuid, 1)
         except:
             print_exc()
 
@@ -893,16 +891,16 @@ class hookselect(closeashidewindow):
 
                 if hn[:8] == "UserHook":
                     needinserthookcode = savehook_new_data[
-                        gobject.baseobject.gameuid
+                        gobject.base.gameuid
                     ].get("needinserthookcode", [])
                     needinserthookcode = list(set(needinserthookcode + [hc]))
-                    savehook_new_data[gobject.baseobject.gameuid].update(
+                    savehook_new_data[gobject.base.gameuid].update(
                         {"needinserthookcode": needinserthookcode}
                     )
             else:
                 pass
 
-            savehook_new_data[gobject.baseobject.gameuid].update(
+            savehook_new_data[gobject.base.gameuid].update(
                 {"hook": self.textsource.serialselectedhook()}
             )
 
@@ -917,7 +915,7 @@ class hookselect(closeashidewindow):
             print_exc()
 
     def showEvent(self, e):
-        gobject.baseobject.safecloseattachprocess()
+        gobject.base.safecloseattachprocess()
         if len(self.textsource.selectedhook) == 0:
             return
         row = self.querykeyindex(self.textsource.selectedhook[0])
@@ -950,7 +948,7 @@ class hookselect(closeashidewindow):
         elif info == HOSTINFO.Warning:
             QMessageBox.warning(self, _TR("警告"), sentence)
         elif info == HOSTINFO.EmuGameName:
-            gobject.baseobject.displayinfomessage(sentence, "<msg_info_refresh>")
+            gobject.base.displayinfomessage(sentence, "<msg_info_refresh>")
 
     def getnewsentence(self, sentence):
         if self.at1 == 2:

@@ -155,14 +155,34 @@ class dialog_syssetting(LDialog):
             "自动朗读",
             getsimpleswitch(globalconfig, "is_search_word_auto_tts_2"),
         )
-        formLayout.addRow(
-            "失去焦点时关闭",
-            getsimpleswitch(
-                globalconfig,
-                "WordViewTooltipHideFocus",
-                callback=lambda x: parent.closebutton.setVisible(not x),
+        focus = getsimpleswitch(
+            globalconfig,
+            "WordViewTooltipHideFocus",
+            callback=lambda x: parent.closebutton.setVisible(
+                not (
+                    globalconfig["WordViewTooltipHideFocus"]
+                    or globalconfig["WordViewTooltipHideLeave"]
+                )
             ),
         )
+        focus.setEnabled(not globalconfig["WordViewTooltipHideLeave"])
+        formLayout.addRow(
+            "鼠标离开时关闭",
+            getsimpleswitch(
+                globalconfig,
+                "WordViewTooltipHideLeave",
+                callback=lambda x: (
+                    focus.setEnabled(not x),
+                    parent.closebutton.setVisible(
+                        not (
+                            globalconfig["WordViewTooltipHideFocus"]
+                            or globalconfig["WordViewTooltipHideLeave"]
+                        )
+                    ),
+                ),
+            ),
+        )
+        formLayout.addRow("失去焦点时关闭", focus)
         formLayout.addRow(SplitLine())
         spin = getspinbox(
             0,
@@ -218,6 +238,12 @@ class WordViewTooltip(resizableframeless, DraggableQWidget):
     def gripSize(self):
         return globalconfig["WordViewTooltipBorder"]
 
+    def leaveEvent(self, a0: QEvent):
+        if globalconfig["WordViewTooltipHideLeave"]:
+            if not self.geometry().contains(QCursor.pos()):
+                self.close()
+        return super().leaveEvent(a0)
+
     def focusOutEvent(self, a0):
         if globalconfig["WordViewTooltipHideFocus"]:
             focused_widget = QApplication.focusWidget()
@@ -246,8 +272,10 @@ class WordViewTooltip(resizableframeless, DraggableQWidget):
         )
 
     def resizeEvent(self, a0: QResizeEvent):
-        self.doResize()
-        globalconfig["WordViewTooltip2"] = a0.size().width(), a0.size().height()
+        if self.__state != 0:
+            # Qt模式下，谜之resize
+            self.doResize()
+            globalconfig["WordViewTooltip2"] = a0.size().width(), a0.size().height()
         return super().resizeEvent(a0)
 
     def setbgcolor(self):
@@ -289,6 +317,13 @@ class WordViewTooltip(resizableframeless, DraggableQWidget):
                 int(self.winId()), globalconfig["WordViewTooltipDWM_1"]
             )
 
+    def __load(self):
+        if self.__state != 0:
+            return
+        self.__state = 1
+        self.setupUi()
+        self.__state = 2
+
     def __init__(self, parent):
         DraggableQWidget.__init__(self)
         resizableframeless.__init__(
@@ -297,6 +332,18 @@ class WordViewTooltip(resizableframeless, DraggableQWidget):
             Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint,
             None,
         )
+        self.__state = 0
+        gobject.base.hover_search_word.connect(self.searchword)
+        self.__f = QTimer(self)
+        self.__f.setInterval(50)
+        self.__f.timeout.connect(self.__detectkey)
+        self.__savestatus = None
+
+    def Leave(self):
+        self.__f.stop()
+        self.lastword = None
+
+    def setupUi(self):
         self.lastword = None
         self.setMouseTracking(True)
 
@@ -319,26 +366,29 @@ class WordViewTooltip(resizableframeless, DraggableQWidget):
         self.closebutton = getIconButton(
             icon="fa.times", callback=self.close, tips="关闭"
         )
-        if globalconfig["WordViewTooltipHideFocus"]:
+        if (
+            globalconfig["WordViewTooltipHideFocus"]
+            or globalconfig["WordViewTooltipHideLeave"]
+        ):
             self.closebutton.hide()
         buttons.addWidget(self.closebutton)
         buttons.addWidget(
             getIconButton(
                 icon="fa.music",
-                callback=lambda: gobject.baseobject.read_text(self.view.currWord),
+                callback=lambda: gobject.base.read_text(self.view.currWord),
                 tips="语音合成",
             )
         )
         buttons.addStretch(1)
         searchword = lambda anki: (
             self.close(),
-            gobject.baseobject.searchwordW.move(self.pos()),
-            gobject.baseobject.searchwordW._click_word_search_function(
+            gobject.base.searchwordW.move(self.pos()),
+            gobject.base.searchwordW._click_word_search_function(
                 self.view.currWord, self.view.save_sentence, False, self.view.readyData
             ),
             (
-                gobject.baseobject.searchwordW.ankiconnect.click()
-                if ((anki ^ gobject.baseobject.searchwordW.ankiconnect.isChecked()))
+                gobject.base.searchwordW.ankiconnect.click()
+                if ((anki ^ gobject.base.searchwordW.ankiconnect.isChecked()))
                 else ""
             ),
         )
@@ -367,23 +417,19 @@ class WordViewTooltip(resizableframeless, DraggableQWidget):
         self.view.first_result_shown.connect(self.showresult)
         self.view.from_webview_search_word.connect(self.view.searchword)
         self.view.from_webview_search_word_in_new_window.connect(
-            lambda w: gobject.baseobject.searchwordW.searchwinnewwindow(w)
+            lambda w: gobject.base.searchwordW.searchwinnewwindow(w)
         )
         self.view.setStyleSheet("background:transparent")
         self.view.internalsizechanged.connect(self.w2.resize)
         self.view.internalmoved.connect(
             lambda pos: self.w2.move(self.view.mapToParent(pos))
         )
-        self.__f = QTimer(self)
-        self.__f.setInterval(50)
-        self.__f.timeout.connect(self.__detectkey)
-        self.__savestatus = None
 
     def __detectkey(self):
         if not globalconfig["usesearchword_S_hover"]:
             self.__f.stop()
             return
-        result = gobject.baseobject.checkkeypresssatisfy("searchword_S_hover", False)
+        result = gobject.base.checkkeypresssatisfy("searchword_S_hover", False)
         result = result == -1 or result == True
         if result:
             self.__f.stop()
@@ -402,6 +448,9 @@ class WordViewTooltip(resizableframeless, DraggableQWidget):
         show=False,
         force=False,
     ):
+        self.__load()
+        if self.__state != 2:
+            return
         if fromhover and not force:
             if word == self.lastword:
                 return self.moveresult_1()
@@ -412,7 +461,7 @@ class WordViewTooltip(resizableframeless, DraggableQWidget):
                 return
         self.savepos = QCursor.pos()
         if globalconfig["is_search_word_auto_tts_2"]:
-            gobject.baseobject.read_text(word)
+            gobject.base.read_text(word)
         if append:
             word = self.view.currWord + word
         unuse = globalconfig[("ignoredict_S_click", "ignoredict_S_hover")[fromhover]]
@@ -433,7 +482,7 @@ class WordViewTooltip(resizableframeless, DraggableQWidget):
     def moveresult_1(self):
         if not self.isVisible():
             return
-        result = gobject.baseobject.checkkeypresssatisfy("searchword_S_hover", False)
+        result = gobject.base.checkkeypresssatisfy("searchword_S_hover", False)
         # 仅按着键盘时，才追踪，否则不要动。
         if result == True:
             self.move(limitpos(QCursor.pos(), self, QPoint(1, 10)))

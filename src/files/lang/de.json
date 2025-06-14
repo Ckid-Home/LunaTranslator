@@ -754,7 +754,6 @@
     "模型加载失败": "Fehler beim Laden des Modells",
     "请点击游戏窗口": "Bitte klicken Sie auf das Spielfenster",
     "转换Markdown为HTML": "Konvertieren Sie Markdown in HTML",
-    "可编辑的": "Editierbar",
     "合并临近行": "Zusammenführen benachbarter Zeilen",
     "距离": "Abstand",
     "翻译前替换": "Substitution vor der Übersetzung",
@@ -810,5 +809,6 @@
     "软件维护不易，如果您感觉该软件对你有帮助，欢迎成为我的[sponsor](https://patreon.com/HIllya51)，您的支持将成为软件长期维护的助力，谢谢~": "Softwarewartung ist nicht einfach. Wenn Sie das Programm hilfreich finden, können Sie gerne mein [Sponsor](https://patreon.com/HIllya51) werden. Ihre Unterstützung wird zur langfristigen Pflege des Programms beitragen. Vielen Dank!",
     "刷新间隔": "Aktualisierungsintervall",
     "找不到运行时": "Laufzeit nicht gefunden",
-    "环回录制": "Loop-Aufnahme"
+    "环回录制": "Loop-Aufnahme",
+    "鼠标离开时关闭": "Schließen bei Mausverlassen"
 }

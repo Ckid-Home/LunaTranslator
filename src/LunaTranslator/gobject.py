@@ -53,12 +53,10 @@ try:
 except:
     pass
 if TYPE_CHECKING:
-    from LunaTranslator import MAINUI
-baseobject: "MAINUI" = None
-global_dialog_savedgame_new = None
-global_dialog_setting_game = None
+    from LunaTranslator import BASEOBJECT
+base: "BASEOBJECT" = None
 serverindex = 0
-edittrans = None
+istest = False
 
 
 class Consts:

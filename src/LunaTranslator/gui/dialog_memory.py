@@ -281,7 +281,7 @@ class dialog_memory(saveposwindow):
     def gameuid(self):
         if self._gameuid:
             return self._gameuid
-        return 0 if self.xx else gobject.baseobject.gameuid
+        return 0 if self.xx else gobject.base.gameuid
 
     def __init__(self, parent, x=False, gameuid=None) -> None:
         self.xx = x
@@ -322,7 +322,6 @@ class dialog_memory(saveposwindow):
             parent=self, icon="fa.picture-o", tips="插入图片"
         )
         self.insertaudiobtn = IconButton(parent=self, icon="fa.music", tips="插入音频")
-        self.insertaudiobtnisrecoding = False
         self.textbtn = IconButton(parent=self, icon="fa.text-height", tips="插入文本")
         openfile = IconButton(parent=self, icon="fa.external-link", tips="打开文件")
         openfile.clicked.connect(lambda: self.editororview.sourcefileopen())
@@ -342,6 +341,7 @@ class dialog_memory(saveposwindow):
                 for i, _ in enumerate(self.config)
             ),
         )
+        self.is_recording = False
         self.tab.setUpdatesEnabled(True)
         self.tab.currentChanged.connect(self._add_trace)
         self.tab.tabBar().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -351,11 +351,13 @@ class dialog_memory(saveposwindow):
         self.setCentralWidget(self.tab)
         self._add_trace(0)
 
-    def startorendrecord(self, btn: QPushButton, idx):
-        if idx:
+    def startorendrecord(self):
+        if not self.is_recording:
+            self.is_recording = True
             try:
 
                 def safestop(recored: loopbackrecorder):
+                    self.is_recording = False
                     recored.stop()
 
                 self.recorders = loopbackrecorder()
@@ -363,9 +365,9 @@ class dialog_memory(saveposwindow):
             except Exception as e:
                 self.recorders = None
                 QMessageBox.critical(self, _TR("错误"), str(e))
-                btn.click()
-                return
+                self.insertaudiobtn.click()
         else:
+            self.is_recording = False
             if not self.recorders:
                 return
             file = self.recorders.stop_save()
@@ -373,9 +375,8 @@ class dialog_memory(saveposwindow):
             self.audiocallback(file)
 
     def AudioSelect(self):
-        if self.insertaudiobtnisrecoding:
-            self.startorendrecord(self.insertaudiobtn, False)
-            self.insertaudiobtnisrecoding = False
+        if self.is_recording:
+            self.startorendrecord()
             return
         menu = QMenu(self)
         record = LAction("录音", menu)
@@ -386,8 +387,7 @@ class dialog_memory(saveposwindow):
         menu.addAction(audio)
         action = menu.exec(QCursor.pos())
         if action == record:
-            self.insertaudiobtnisrecoding = True
-            self.startorendrecord(self.insertaudiobtn, True)
+            self.startorendrecord()
             self.insertaudiobtn.setIcon(qtawesome.icon("fa.stop"))
         elif action == audio:
             f = QFileDialog.getOpenFileName()
@@ -437,11 +437,11 @@ class dialog_memory(saveposwindow):
             self.cropcallback(res)
 
     def crophide(self, s=False):
-        currpos = gobject.baseobject.translation_ui.pos()
+        currpos = gobject.base.translation_ui.pos()
         currpos2 = self.window().pos()
         if s:
             self.window().move(-9999, -9999)
-            gobject.baseobject.translation_ui.move(-9999, -9999)
+            gobject.base.translation_ui.move(-9999, -9999)
 
         def ocroncefunction(rect, img=None):
             if not img:
@@ -455,7 +455,7 @@ class dialog_memory(saveposwindow):
         def __ocroncefunction(rect, img=None):
             ocroncefunction(rect, img=img)
             if s:
-                gobject.baseobject.translation_ui.move(currpos)
+                gobject.base.translation_ui.move(currpos)
                 self.window().move(currpos2)
 
         rangeselct_function(__ocroncefunction)
@@ -478,13 +478,13 @@ class dialog_memory(saveposwindow):
         menu.addAction(origin_hira)
         action = menu.exec(QCursor.pos())
         if action == origin:
-            self.__wrap(gobject.baseobject.currenttext)
+            self.__wrap(gobject.base.currenttext)
         elif action == ts:
-            self.__wrap(gobject.baseobject.currenttranslate)
+            self.__wrap(gobject.base.currenttranslate)
         elif action == origin_hira:
             self.__wrap(
                 mecab.makerubyhtml(
-                    gobject.baseobject.parsehira(gobject.baseobject.currenttext)
+                    gobject.base.parsehira(gobject.base.currenttext)
                 )
             )
 

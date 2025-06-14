@@ -1,20 +1,18 @@
 from qtsymbols import *
 import functools
 import qtawesome
-import random
+import random, gobject
 from myutils.config import globalconfig
 from gui.usefulwidget import closeashidewindow, makesubtab_lazy
 from gui.setting.textinput import setTabOne_lazy
 from gui.setting.translate import setTabTwo_lazy
 from gui.setting.display import setTabThree_lazy
-from gui.setting.tts import setTab5, showvoicelist
+from gui.setting.tts import setTab5
 from gui.setting.cishu import setTabcishu
 from gui.setting.hotkey import setTab_quick, registrhotkeys
-from traceback import print_exc
-from gui.setting.transopti import setTab7_lazy, delaysetcomparetext
-from gui.setting.about import setTab_about, versionlabelmaybesettext, versioncheckthread
+from gui.setting.transopti import setTab7_lazy
+from gui.setting.about import setTab_about
 from gui.dynalang import LListWidgetItem, LListWidget
-from gui.flowsearchword import WordViewTooltip
 
 
 class TabWidget(QWidget):
@@ -43,15 +41,10 @@ class TabWidget(QWidget):
 
     def __currentChanged(self, idx):
         self.tab_widget.setCurrentIndex(idx)
-        if self.__first:
-            self.__first = False
-            return
-        globalconfig["isopensettingfirsttime1"] = idx
 
     def __init__(self, parent=None):
         super(TabWidget, self).__init__(parent)
         layout = QHBoxLayout(self)
-        self.__first = True
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         self.list_widget = LListWidget(self)
@@ -64,7 +57,6 @@ class TabWidget(QWidget):
         layout.addWidget(self.tab_widget)
         self.currentChanged.connect(self.__currentChanged)
         self.list_widget.currentRowChanged.connect(self.currentChanged)
-        self.idx = 0
         self.titles = []
 
     def addTab(self, widget, title):
@@ -73,60 +65,19 @@ class TabWidget(QWidget):
         item = LListWidgetItem(title)
         item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
         self.list_widget.addItem(item)
-        if self.idx == 0:
-            self.list_widget.setCurrentRow(0)
-        self.idx += 1
 
     def currentWidget(self):
         return self.tab_widget.currentWidget()
 
 
 class Setting(closeashidewindow):
-    hover_search_word = pyqtSignal(str, str, bool, bool, bool)
-    hover_search_word_checkpos = pyqtSignal()
-    voicelistsignal = pyqtSignal(object)
-    versiontextsignal = pyqtSignal(str)
-    progresssignal2 = pyqtSignal(str, int)
-    progresssignal4 = pyqtSignal(str, int)
-    progresssignal3 = pyqtSignal(int)
-    showandsolvesig = pyqtSignal(str, str)
-    safeinvokefunction = pyqtSignal(object)
-    thresholdsett2 = pyqtSignal(str)
-    thresholdsett1 = pyqtSignal(str)
-    portconflict = pyqtSignal(str)
-
-    def _progresssignal4(self, text, val):
-        try:
-            self.downloadprogress.setValue(val)
-            self.downloadprogress.setFormat(text)
-            if val or text:
-                self.updatelayout.setRowVisible(1, True)
-        except:
-            self.downloadprogress_cache = text, val
-
-    def __safeinvoke(self, fobj):
-        try:
-            fobj()
-        except:
-            print_exc()
 
     def __init__(self, parent):
         super(Setting, self).__init__(parent, globalconfig["setting_geo_2"])
         self.setWindowIcon(qtawesome.icon("fa.gear"))
-        self.portconflictcache = []
-        self.portconflict.connect(self.portconflictcache.append)
-        self.safeinvokefunction.connect(self.__safeinvoke)
-        self.progresssignal4.connect(self._progresssignal4)
-        self.showandsolvesig.connect(functools.partial(delaysetcomparetext, self))
-        self.voicelistsignal.connect(functools.partial(showvoicelist, self))
-        self.versiontextsignal.connect(
-            functools.partial(versionlabelmaybesettext, self)
-        )
         self.isfirst = True
-        versioncheckthread(self)
         registrhotkeys(self)
-        self._WordViewer = WordViewTooltip(self)
-        self.hover_search_word.connect(self._WordViewer.searchword)
+        gobject.base.settin_ui_showsignal.connect(self.showsignal)
 
     def showEvent(self, e: QShowEvent):
         if self.isfirst:
@@ -167,9 +118,4 @@ class Setting(closeashidewindow):
         do()
         self.tab_widget.adjust_list_widget_width()
         last = self.tab_widget.list_widget.count() - 1
-        if "isopensettingfirsttime1" not in globalconfig:
-            globalconfig["isopensettingfirsttime1"] = last
-        elif random.randint(0, 100) < 25:
-            globalconfig["isopensettingfirsttime1"] = last
-        if globalconfig["isopensettingfirsttime1"] == last:
-            self.tab_widget.setCurrentIndex(last)
+        self.tab_widget.setCurrentIndex(last)

@@ -190,7 +190,7 @@ class SpecialFont(PopupWidget):
         self.resetfont()
 
     def resetfont(self, _=None):
-        gobject.baseobject.translation_ui.translate_text.setfontextra(self.apiuid)
+        gobject.base.translation_ui.translate_text.setfontextra(self.apiuid)
 
 
 def renameapi(qlabel: QLabel, apiuid, self, countnum, _=None):
@@ -217,9 +217,13 @@ def renameapi(qlabel: QLabel, apiuid, self, countnum, _=None):
         usecache.setChecked(globalconfig["fanyi"][apiuid].get("use_trans_cache", True))
         menu.addAction(copy)
 
-    if which == 1:
+    if which == 1 or "chatgpt-offline" == apiuid:
         menu.addAction(delete)
-    if globalconfig["useproxy"] and globalconfig["fanyi"][apiuid].get("type") not in ("offline", "other", "pre"):
+    if globalconfig["useproxy"] and globalconfig["fanyi"][apiuid].get("type") not in (
+        "offline",
+        "other",
+        "pre",
+    ):
         menu.addSeparator()
         menu.addAction(useproxy)
         useproxy.setChecked(globalconfig["fanyi"][apiuid].get("useproxy", True))
@@ -272,7 +276,7 @@ def renameapi(qlabel: QLabel, apiuid, self, countnum, _=None):
     elif action == specialfont:
         SpecialFont(apiuid, self).display(pos)
     elif action == copy:
-        selectllmcallback(self, countnum, apiuid, None)
+        selectllmcallback(self, countnum, apiuid)
 
 
 def getrenameablellabel(uid, self, countnum):
@@ -302,7 +306,7 @@ def loadbutton(self, fanyi):
     )
 
 
-def selectllmcallback(self, countnum: list, fanyi, name):
+def selectllmcallback(self, countnum: list, fanyi, *_):
     uid = str(uuid.uuid4())
     _f11 = "Lunatranslator/translator/{}.py".format(fanyi)
     _f12 = "userconfig/copyed/{}.py".format(fanyi)
@@ -315,10 +319,9 @@ def selectllmcallback(self, countnum: list, fanyi, name):
 
     globalconfig["fanyi"][uid] = copy.deepcopy(globalconfig["fanyi"][fanyi])
     globalconfig["fanyi"][uid]["use"] = False
-
-    if not name:
-        name = globalconfig["fanyi"][fanyi]["name"] + "_copy"
-    globalconfig["fanyi"][uid]["name"] = name
+    globalconfig["fanyi"][uid]["name"] = dynamicapiname(fanyi) + "_copy"
+    if "name_self_set" in globalconfig["fanyi"][uid]:
+        globalconfig["fanyi"][uid].pop("name_self_set")
     globalconfig["fanyi"][uid]["type"] = globalconfig["fanyi"][fanyi]["type"]
     if fanyi in translatorsetting:
         translatorsetting[uid] = copy.deepcopy(translatorsetting[fanyi])
@@ -331,13 +334,13 @@ def selectllmcallback(self, countnum: list, fanyi, name):
     swc = getsimpleswitch(
         globalconfig["fanyi"][uid],
         "use",
-        callback=functools.partial(gobject.baseobject.prepare, uid),
+        callback=functools.partial(gobject.base.prepare, uid),
     )
     color = getcolorbutton(
         self,
         globalconfig["fanyi"][uid],
         "color",
-        callback=gobject.baseobject.translation_ui.translate_text.setcolorstyle,
+        callback=gobject.base.translation_ui.translate_text.setcolorstyle,
     )
 
     offset = 5 * (len(countnum) % 3)
@@ -367,7 +370,7 @@ def selectllmcallback_2(self, countnum: list, fanyi, name):
         pass
     globalconfig["fanyi"][fanyi]["use"] = False
     try:
-        gobject.baseobject.translators.pop(fanyi)
+        gobject.base.translators.pop(fanyi)
     except:
         pass
     layout: QGridLayout = getattr(self, "damoxinggridinternal")
@@ -466,13 +469,13 @@ def initsome11(self, l, save=False):
             D_getsimpleswitch(
                 globalconfig["fanyi"][fanyi],
                 "use",
-                callback=functools.partial(gobject.baseobject.prepare, fanyi),
+                callback=functools.partial(gobject.base.prepare, fanyi),
             ),
             D_getcolorbutton(
                 self,
                 globalconfig["fanyi"][fanyi],
                 "color",
-                callback=gobject.baseobject.translation_ui.translate_text.setcolorstyle,
+                callback=gobject.base.translation_ui.translate_text.setcolorstyle,
             ),
             last,
         ]
