@@ -33,7 +33,7 @@ set(loopback_src applicationloopbackaudio/runer.cpp applicationloopbackaudio/Loo
 
 add_library(NativeUtils SHARED
     audiodevice.cpp
-    globalmessagelistener.cpp AreoAcrylic.cpp screenshot.cpp hwnd.cpp theme.cpp version.cpp lnk.cpp muteprocess.cpp sapi_dll.cpp tools.cpp icon.cpp adapters.cpp appx.cpp
+    globalmessagelistener.cpp AreoAcrylic.cpp screenshot.cpp hwnd.cpp theme.cpp lnk.cpp muteprocess.cpp sapi_dll.cpp tools.cpp icon.cpp adapters.cpp appx.cpp
     ${loopback_src} ${winrt_src} ${mshtml_src} ${webview2_src} ${versioninfo}
 )
 target_precompile_headers(NativeUtils REUSE_FROM pch)
@@ -43,11 +43,16 @@ if(MSVC)
     target_link_libraries(NativeUtils PRIVATE ${YY_Thunks})
     target_link_options(NativeUtils PRIVATE "/DELAYLOAD:Dbghelp.dll")
     if(NOT WINXP)
-        target_link_libraries(NativeUtils PRIVATE ShCore Mmdevapi windowsapp)
+        target_link_libraries(NativeUtils PRIVATE ShCore Mmdevapi)
         target_link_options(NativeUtils PRIVATE "/DELAYLOAD:MMDevAPI.dll")
         target_link_options(NativeUtils PRIVATE "/DELAYLOAD:MFPlat.dll")
         target_link_options(NativeUtils PRIVATE "/DELAYLOAD:dxgi.dll")
+        target_link_options(NativeUtils PRIVATE "/DELAYLOAD:d3d11.dll")
     endif()
 else()
-    target_link_libraries(NativeUtils PRIVATE ShCore Mmdevapi windowsapp)
+    target_link_libraries(NativeUtils PRIVATE ShCore Mmdevapi)
+endif()
+
+if(WIN10ABOVE)
+	target_link_libraries(NativeUtils PRIVATE windowsapp)
 endif()

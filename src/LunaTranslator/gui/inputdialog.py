@@ -249,7 +249,7 @@ class voiceselect(LDialog):
         self.datas["vis"] = self.datas["visx"]
         self.datas["voice"] = None
         try:
-            self.object = gobject.baseobject.loadreader(internal, init=False)
+            self.object = gobject.base.loadreader(internal, init=False)
             self.voicelistsignal.emit(self.object)
         except:
 
@@ -499,6 +499,11 @@ class SuperComboX(SuperCombo):
 
 @Singleton
 class autoinitdialog(LDialog):
+    def closeEvent(self, a0):
+        if not isqt5:
+            for _ in self.__qt6fucker:
+                _.setEditable(False)
+        return super().closeEvent(a0)
 
     def __refresh(self, line, combo: SuperCombo):
         try:
@@ -523,6 +528,7 @@ class autoinitdialog(LDialog):
                     if text:
                         text += "\n"
                     text += e.args[1]
+                print(title, text)
                 QMessageBox.information(self, title, text)
             else:
                 QMessageBox.information(self, str(type(e))[8:-2], str(e))
@@ -573,10 +579,10 @@ class autoinitdialog(LDialog):
                 self.regist[key] = lineW.currentIndex
             self.cachecombo[key] = lineW
         elif line["type"] == "listedit_with_name":
-            line1 = QLineEdit()
             lineW = QHBoxLayout()
             combo = SuperComboX()
-            combo.setLineEdit(line1)
+            combo.setEditable(True)
+            self.__qt6fucker.append(combo)
             vis = [
                 _["vis"] + "_({})".format(_["value"])
                 for _ in static_data["API_URL_PRESETS"]
@@ -595,11 +601,10 @@ class autoinitdialog(LDialog):
             self.regist[key] = combo.currentText
             lineW.addWidget(combo)
         elif line["type"] == "lineedit_or_combo":
-            line1 = QLineEdit()
             lineW = QHBoxLayout()
             combo = SuperCombo(static=True)
-            combo.setLineEdit(line1)
-
+            combo.setEditable(True)
+            self.__qt6fucker.append(combo)
             if "list_function" in line:
                 items = dd[self.refname2line[line["list_cache"]]["k"]]
             else:
@@ -710,7 +715,7 @@ class autoinitdialog(LDialog):
         self._dict = dd.copy()
         self.modelfile = modelfile
         self.maybehasextrainfo = maybehasextrainfo
-
+        self.__qt6fucker: "list[QComboBox]" = []
         hasrank = []
         negarank = []
         hasnorank = []

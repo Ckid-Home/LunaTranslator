@@ -5,6 +5,7 @@ import time, types
 import gobject
 import json
 import functools
+from myutils.wrapper import threader
 from myutils.config import globalconfig, translatorsetting
 from myutils.utils import (
     stringfyerror,
@@ -21,7 +22,7 @@ class Interrupted(Exception):
 
 class Threadwithresult(Thread):
     def __init__(self, func):
-        super(Threadwithresult, self).__init__()
+        super(Threadwithresult, self).__init__(daemon=True)
         self.func = func
         self.isInterrupted = True
         self.exception = None
@@ -37,7 +38,7 @@ class Threadwithresult(Thread):
         # Thread.join(self,timeout)
         # 不再超时等待，只检查是否是最后一个请求，若是则无限等待，否则立即放弃。
         while checktutukufunction and checktutukufunction() and self.isInterrupted:
-            Thread.join(self, 0.1)
+            self.join(0.1)
 
         if self.isInterrupted:
             raise Interrupted()
@@ -77,10 +78,11 @@ class basetrans(commonbase):
             globalconfig["fanyi"][self.typename]["useproxy"] = False
         self.queue = PriorityQueue()
         self.sqlqueue = None
+        self.sqlwrite2 = None
         try:
             self._private_init()
         except Exception as e:
-            gobject.baseobject.displayinfomessage(
+            gobject.base.displayinfomessage(
                 dynamicapiname(self.typename)
                 + " init translator failed : "
                 + str(stringfyerror(e)),
@@ -112,8 +114,8 @@ class basetrans(commonbase):
             except:
                 print_exc
             self.sqlqueue = Queue()
-            Thread(target=self._sqlitethread).start()
-        Thread(target=self._fythread).start()
+            threader(self._sqlitethread)()
+        threader(self._fythread)()
 
     def notifyqueuforend(self):
         if self.sqlqueue:
@@ -179,6 +181,8 @@ class basetrans(commonbase):
         self.queue.put(content, priority)
 
     def longtermcacheget(self, src):
+        if not self.sqlwrite2:
+            return
         try:
             ret = self.sqlwrite2.execute(
                 "SELECT trans FROM cache WHERE (( (srclang=? and tgtlang=?) or  (srclang=? and tgtlang=?)) and source=?)",
@@ -198,7 +202,8 @@ class basetrans(commonbase):
             return None
 
     def longtermcacheset(self, src, tgt):
-        self.sqlqueue.put((src, tgt))
+        if self.sqlqueue:
+            self.sqlqueue.put((src, tgt))
 
     def shorttermcacheget(self, src):
         langkey = (self.srclang_1, self.tgtlang_1)

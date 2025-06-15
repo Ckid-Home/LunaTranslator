@@ -754,7 +754,6 @@
     "模型加载失败": "Wczytywanie modelu nie powiodło się",
     "请点击游戏窗口": "Kliknij na okno gry",
     "转换Markdown为HTML": "Konwertuj język Markdown na HTML",
-    "可编辑的": "Edytowalny",
     "合并临近行": "Scalanie sąsiednich wierszy",
     "距离": "odległość",
     "翻译前替换": "Substytucja przed tłumaczeniem",
@@ -810,5 +809,6 @@
     "软件维护不易，如果您感觉该软件对你有帮助，欢迎成为我的[sponsor](https://patreon.com/HIllya51)，您的支持将成为软件长期维护的助力，谢谢~": "Utrzymanie oprogramowania nie jest łatwe. Jeśli uważasz, że to oprogramowanie jest dla Ciebie pomocne, zapraszam do zostania moim [sponsorem](https://patreon.com/HIllya51). Twoje wsparcie będzie motywacją do długoterminowego utrzymania oprogramowania. Dziękuję!",
     "刷新间隔": "Interwał odświeżania",
     "找不到运行时": "Nie można znaleźć środowiska wykonawczego",
-    "环回录制": "Nagrywanie pętli zwrotnej"
+    "环回录制": "Nagrywanie pętli zwrotnej",
+    "鼠标离开时关闭": "Zamknij po opuszczeniu kursora"
 }

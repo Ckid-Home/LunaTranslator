@@ -25,6 +25,29 @@ Vui lòng để trình dịch HOOK trình giả lập trước khi tải trò ch
 
 |  | ID       | Game                |
 | ---- | ---------- | ------------------- |
+|  | 010096E021CF2000 | VIRTUAL GIRL @ WORLD'S END |
+|  | 01006660233C6000 | レッドベルの慟哭 (The Red Bells Lament) |
+|  | 010056401B548000 | シロガネｘスピリッツ！ |
+|  | 0100E7701A40C000 | 花咲ワークスプリング！ |
+|  | 01008D20101DE000 | ボク姫PROJECT |
+|  | 010022E00C9D8000 | リプキス |
+|  | 01003B900C9DC000 | 甘えかたは彼女なりに。 |
+|  | 0100D1A014A4A000 | かけぬけ★青春スパーキング！ |
+|  | 010050E012CB6000 | Paradigm Paradox |
+|  | 0100AA301A99E000 | 放課後シンデレラ２ |
+|  | 01009D3019684000 | はつゆきさくら |
+|  | 010045C0109F2000 | VARIABLE BARRICADE |
+|  | 010060A0161EC000 | 月の彼方で逢いましょう |
+|  | 01008DC019F7A000 | エヴァーメイデン ～堕落の園の乙女たち～ |
+|  | 01002AF019F88000 | ふゆから、くるる。 |
+|  | 0100D4800C476000 | 添いカノ ～ぎゅっと抱きしめて～ |
+|  | 01003FF010312000 | 軍靴をはいた猫 |
+|  | 01003080177CA000 | 冥契のルペルカリア |
+|  | 0100E920175B0000 | ――ｯ違う!!!+ |
+|  | 01009A60205DE000 | 数乱digit |
+|  | 0100D4601FD60000 | 蒼黒の楔 ～緋色の欠片 玉依姫奇譚～ |
+|  | 0100EC001DE7E000 | 緋色の欠片 玉依姫奇譚 ～おもいいろの記憶～ |
+|  | 0100C30020F70000 | BYAKKO ～四神部隊炎恋記～ |
 |  | 01007250089F8000 | LoveR Kiss |
 |  | 01001A4021670000 | あやかしごはん ～おおもりっ！～ for S |
 |  | 0100E9801CAC2000 | OVER REQUIEMZ |
@@ -43,14 +66,15 @@ Vui lòng để trình dịch HOOK trình giả lập trước khi tải trò ch
 |  | 0100A460141B8000 | 白と黒のアリス |
 |  | 0100A460141B8000 | 白と黒のアリス -Twilight line- |
 |  | 0100A3A00CC7E000 | CLANNAD |
-|  | 010045C0109F2000 | VARIABLE BARRICADE NS |
 |  | 0100A1200CA3C000 | 蝶の毒 華の鎖～大正艶恋異聞～ |
 |  | 0100C29017106000 | Live a Live |
 |  | 01006590155AC000 | さくらの雲＊スカアレットの恋 |
 |  | 01000200194AE000 | マジェスティック☆マジョリカル |
 |  | 0100EA001A626000 | マツリカの炯-kEi- 天命胤異伝 |
+|  | 0100F5A01EA12000 | 茉莉花之炯 天命胤異傳 |
 |  | 0100F7E00DFC8000 | キューピット・パラサイト |
 |  | 0100925014864000 | ラディアンテイル |
+|  | 010088B01A8FC000 | ラディアンテイル ～ファンファーレ！～ |
 |  | 01000130150FA000 | MUSICUS |
 |  | 0100936018EB4000 | Story of Seasons a Wonderful Life |
 |  | 0100982015606000 | 乙女ゲームの破滅フラグしかない悪役令嬢に転生してしまった… 〜波乱を呼ぶ海賊〜 |
@@ -74,8 +98,8 @@ Vui lòng để trình dịch HOOK trình giả lập trước khi tải trò ch
 |  | 0100C49010598000 | 薄桜鬼 真改 銀星ノ抄 |
 |  | 0100E1E00E2AE000 | 薄桜鬼 真改 月影ノ抄 |
 |  | 0100D57014692000 | 薄桜鬼　黎明録 |
-|  | 01004EB01A328000 | 薄桜鬼SSL ～sweet school life～ for Nintendo Switch |
-|  | 010046601C024000 | 薄桜鬼 真改 遊戯録　隊士達の大宴会 for Nintendo Switch |
+|  | 01004EB01A328000 | 薄桜鬼SSL ～sweet school life～ |
+|  | 010046601C024000 | 薄桜鬼 真改 遊戯録　隊士達の大宴会 |
 |  | 0100AC20128AC000 | Chrono Cross: The Radical Dreamers Edition |
 |  | 0100ADC014DA0000 | AIR |
 |  | 0100AFA01750C000 | 死神と少女 |
@@ -98,9 +122,9 @@ Vui lòng để trình dịch HOOK trình giả lập trước khi tải trò ch
 |  | 0100B0C016164000 | Etrian Odyssey II HD |
 |  | 0100D32015A52000 | Etrian Odyssey III HD |
 |  | 0100A6301214E000 | Fire Emblem Engage |
-|  | 0100B5700CDFC000 | AMNESIA LATER×CROWD for Nintendo Switch |
-|  | 0100A1E00BFEA000 | AMNESIA for Nintendo Switch |
-|  | 010099901461A000 | AMNESIA World for Nintendo Switch |
+|  | 0100B5700CDFC000 | AMNESIA LATER×CROWD |
+|  | 0100A1E00BFEA000 | AMNESIA |
+|  | 010099901461A000 | AMNESIA World |
 |  | 0100A8401A0A8000 | Natsumon! 20th Century Summer Vacation |
 |  | 0100BC0018138000 | Super Mario RPG |
 |  | 0100D7800E9E0000 | Trials of Mana |
@@ -133,8 +157,8 @@ Vui lòng để trình dịch HOOK trình giả lập trước khi tải trò ch
 |  | 0100874017BE2000 | BUSTAFELLOWS シーズン2 |
 |  | 010094601D910000 | 5分後に意外な結末　モノクロームの図書館 |
 |  | 010024200E00A000 | うたの☆プリンスさまっ♪ Repeat LOVE |
-|  | 01000C7019E1C000 | ワンド オブ フォーチュン Ｒ～ for Nintendo Switch |
-|  | 010088A01A774000 | ワンド オブ フォーチュン Ｒ２ ～時空に沈む黙示録～ for Nintendo Switch |
+|  | 01000C7019E1C000 | ワンド オブ フォーチュン Ｒ～ |
+|  | 010088A01A774000 | ワンド オブ フォーチュン Ｒ２ ～時空に沈む黙示録～ |
 |  | 010086C00AF7C000 | Yo-kai Watch 4++ |
 |  | 010079C017B98000 | キューピット・パラサイト -Sweet & Spicy Darling.- |
 |  | 010061A01C1CE000 | DesperaDrops |
@@ -169,7 +193,7 @@ Vui lòng để trình dịch HOOK trình giả lập trước khi tải trò ch
 |  | 0100E390145C8000 | 殺し屋とストロベリー |
 |  | 0100D9A01BD86000 | ときめきメモリアル Girl's Side |
 |  | 010079201BD88000 | ときめきメモリアル Girl’s Side 2nd Kiss |
-|  | 010091C01BD8A000 | ときめきメモリアル Girl's Side 3rd Story for Nintendo Switch |
+|  | 010091C01BD8A000 | ときめきメモリアル Girl's Side 3rd Story |
 |  | 0100B0100E26C000 | ときめきメモリアル Girl's Side 4th Heart |
 |  | 0100CC80140F8000 | Triangle Strategy |
 |  | 010074F013262000 | Xenoblade Chronicles 3 |
@@ -178,9 +202,8 @@ Vui lòng để trình dịch HOOK trình giả lập trước khi tải trò ch
 |  | 01004D601B0AA000 | 終遠のヴィルシュ -EpiC:lycoris- |
 |  | 01003FE00E2F8000 | スペードの国のアリス ～Wonderful White World～ |
 |  | 0100AB100E2FA000 | スペードの国のアリス ～Wonderful Black World～ |
-|  | 01003D2017FEA000 | 十三支演義 偃月三国伝1・2 for Nintendo Switch |
+|  | 01003D2017FEA000 | 十三支演義 偃月三国伝1・2 |
 |  | 01002C0008E52000 | Tales of Vesperia: Definitive Edition |
-|  | 01002BB00A662000 | Nil Adminari no Tenbin Irodori Nadeshiko |
 |  | 01008DE00C022000 | 華ヤカ哉、我ガ一族 モダンノスタルジィ |
 |  | 0100B5500CA0C000 | 華ヤカ哉、我ガ一族 幻燈ノスタルジィ |
 |  | 0100F4401940A000 | 超探偵事件簿 レインコード |
@@ -201,7 +224,7 @@ Vui lòng để trình dịch HOOK trình giả lập trước khi tải trò ch
 |  | 01002AE00F442000 | FLOWERS 四季 |
 |  | 01000A400AF2A000 | 最悪なる災厄人間に捧ぐ |
 |  | 01006B5014E2E000 | 神様のような君へ |
-|  | 01001B900C0E2000 | 猛獣使いと王子様 ～Flower ＆ Snow～ for Nintendo Switch |
+|  | 01001B900C0E2000 | 猛獣使いと王子様 ～Flower ＆ Snow～ |
 |  | 010007500F27C000 | Detective Pikachu Returns |
 |  | 0100217014266000 | Dragon Quest Treasures |
 |  | 010027100C79A000 | Rune Factory 4 Special |
@@ -223,7 +246,6 @@ Vui lòng để trình dịch HOOK trình giả lập trước khi tải trò ch
 |  | 010095E01581C000 | even if TEMPEST 宵闇にかく語りき魔女 |
 |  | 010096000CA38000 | 大正×対称アリス all in one |
 |  | 0100B1F0123B6000 | 大正×対称アリス HEADS&TAILS |
-|  | 0100EC001DE7E000 | 緋色の欠片 玉依姫奇譚 ～おもいいろの記憶～ |
 |  | 010037500DF38000 | 幻想マネージュ |
 |  | 010079200C26E000 | 幻奏喫茶アンシャンテ |
 |  | 01002C00177AE000 | 天獄ストラグル -strayside- |
@@ -237,9 +259,8 @@ Vui lòng để trình dịch HOOK trình giả lập trước khi tải trò ch
 |  | 01004E5017C54000 | Dance with Devils |
 |  | 01003BB01DF54000 | My9Swallows TOPSTARS LEAGUE |
 |  | 01005AF00E9DC000 | 時計仕掛けのアポカリプス |
-|  | 010088B01A8FC000 | ラディアンテイル ～ファンファーレ！～ |
 |  | 010032300C562000 | Lover Pretend |
-|  | 01001A500AD6A000 | NORN9 ~ノルン+ノネット~ LOFN for Nintendo Switch |
+|  | 01001A500AD6A000 | NORN9 ~ノルン+ノネット~ LOFN |
 |  | 010027300A660000 | 私立ベルばら学園 ～ベルサイユのばらRe*imagination～ |
 |  | 0100E4000F616000 | ひめひび Another Princess Days – White or Black – |
 |  | 0100F8D0129F4000 | ひめひび -Princess Days- |
@@ -257,13 +278,13 @@ Vui lòng để trình dịch HOOK trình giả lập trước khi tải trò ch
 |  | 01006530151F0000 | 神々の悪戯 Unite Edition |
 |  | 01005A401D766000 | 新宿羅生門 ―Rashomon of Shinjuku― |
 |  | 01000E701DAE8000 | 夏空のモノローグ ～Another Memory～ |
-|  | 01008A001C79A000 | 真紅の焔 真田忍法帳 for Nintendo Switch |
+|  | 01008A001C79A000 | 真紅の焔 真田忍法帳 |
 |  | 0100612019F12000 | 神さまと恋ゴコロ |
-|  | 0100E8E016D82000 | KLAP!! for Nintendo Switch |
+|  | 0100E8E016D82000 | KLAP!! |
 |  | 0100A0001B9F0000 | PSYCHIC ECLIPSE-サイキックイクリプス- reload |
 |  | 01006CC015ECA000 | アイ★チュウ |
 |  | 0100E5200D1A2000 | カエル畑DEつかまえて☆彡 |
-|  | 0100EFE0159C6000 | カエル畑DEつかまえて・夏 千木良参戦! |
+|  | 0100EFE0159C6000 | カエル畑ＤＥつかまえて・夏　千木良参戦！ |
 |  | 01007FD00DB20000 | 片恋いコントラスト ―collection of branch― |
 |  | 010064701F37A000 | ジュエリー・ハーツ・アカデミア -We will wing wonder world- |
 |  | 01009E600FAF6000 | NG |
@@ -277,10 +298,10 @@ Vui lòng để trình dịch HOOK trình giả lập trước khi tải trò ch
 |  | 01008BA00F172000 | EVE rebirth terror |
 |  | 01007BE0160D6000 | EVE ghost enemies |
 |  | 01002BB00A662000 | ニル・アドミラリの天秤 色ドリ撫子 |
-|  | 01002BB00A662000 | 其二 |
+|  | 01002BB00A662000 | ニル・アドミラリの天秤 クロユリ炎陽譚 |
 |  | 01007A901E728000 | 八剱伝 |
 |  | 0100509013040000 | 大正メビウスライン大全 |
-|  | 010035001D1B2000 | 猛獣たちとお姫様 for Nintendo Switch |
+|  | 010035001D1B2000 | 猛獣たちとお姫様 |
 |  | 010045F00BF64000 | BEAST Darling! ～けもみみ男子と秘密の寮～ |
 |  | 010052300F612000 | 恋の花咲く百花園 |
 |  | 0100CF90151E0000 | 東京24区 -祈- |
@@ -294,9 +315,12 @@ Vui lòng để trình dịch HOOK trình giả lập trước khi tải trò ch
 |  | 010053F0128DC000 | シェルノサージュ ～失われた星へ捧ぐ詩～ DX |
 |  | 0100D8B019FC0000 | フローラル・フローラブ |
 |  | 01001BB01E8E2000 | FANTASIAN Neo Dimension |
+|  | 0100EC6017FA6000 | ハルキス |
+|  | 0100C800169E6000 | メルキス |
+|  | 01005A4015E66000 | アイキス |
 |  | 0100FD4016528000 | アイキス3cute |
 |  | 01002BE0118AE000 | OZMAFIA!! VIVACE |
-|  | 010091C01BD8A000 | ときめきメモリアル Girl's Side 3rd Story for Nintendo Switch |
+|  | 010091C01BD8A000 | ときめきメモリアル Girl's Side 3rd Story |
 |  | 0100AAF020664000 | アパシー 男子校であった怖い話 |
 |  | 0100BBA00B23E000 | 吉原彼岸花 |
 |  | 0100813014B3A000 | ラッキードッグ１ |
@@ -346,8 +370,9 @@ Vui lòng để trình dịch HOOK trình giả lập trước khi tải trò ch
 |  | 0100EE5021C9E000 | たねつみの歌 (Seedsow Lullaby) |
 |  | 0100AC600EB4C000 | 幻想牢獄のカレイドスコープ |
 |  | 0100451020714000 | 幻想牢獄のカレイドスコープ２ |
-|  | 01002080191CE000 | 戦場の円舞曲 for Nintendo Switch |
+|  | 01002080191CE000 | 戦場の円舞曲 |
 |  | 010076902126E000 | DYNAMIC CHORD feat.[rēve parfait] |
+|  | 0100DC1021662000 | 夏目友人帳 ～葉月の記～ |
 
 == PSP
 
@@ -678,6 +703,7 @@ Vui lòng để trình dịch HOOK trình giả lập trước khi tải trò ch
 
 |  | ID       | Game                |
 | ---- | ---------- | ------------------- |
+|  | PCSG01259 | シルヴァリオ トリニティ -Beyond the Horizon- |
 |  | PCSG01023 | 追放選挙 |
 |  | PCSG01282 | 死神と少女 |
 |  | PCSG01268 | 神凪ノ杜 五月雨綴り |
@@ -835,6 +861,49 @@ Vui lòng để trình dịch HOOK trình giả lập trước khi tải trò ch
 
 |  | ID       | Game                |
 | ---- | ---------- | ------------------- |
+|  | SLPM-55058 | レッスルエンジェルス サバイバー2 |
+|  | SLPM-55071 | 夢見白書 ～Second Dream～ [通常版] |
+|  | SLPM-55079 | Scarlett ～日常の境界線～ [通常版] |
+|  | SLPM-55098 | 恋する乙女と守護の楯 [通常版] |
+|  | SLPM-66441 | 大奥記 |
+|  | SLPM-55102 | Piaキャロットへようこそ！！G.P. ～学園プリンセス～ |
+|  | SLPM-55136 | Clear ～新しい風の吹く丘で～ |
+|  | SLPM-55159 | ヒャッコ よろずや事件簿！ |
+|  | SLPM-55052 | トリガーハート エグゼリカ エンハンスド |
+|  | SLPM-55197 | Memories Off 6 Next Relation |
+|  | SLPM-55184 | メルティブラッド アクトレスアゲイン [通常版] |
+|  | SLPM-55154 | つよきす2学期 ～Swift Love～ [通常版] |
+|  | SLPM-55185 | Sweet Honey Coming [DXパック] |
+|  | SLPM-55220 | お掃除戦隊くりーんきーぱー H [通常版] |
+|  | SLPM-62784 | 顔のない月 Select story |
+|  | SLPM-55240 | ef - A Fairy Tale of the Two. [初回限定特別同梱版] |
+|  | SLPM-55243 | スズノネセブン！～Rebirth Knot～ |
+|  | SLPS-25956 | 萌え萌え2次大戦(略)2[chu～♪] [通常版] |
+|  | SLPM-55174 | ストライクウィッチーズ あなたとできること [通常版] |
+|  | SLPM-55068 | 恋姫†夢想 ～ドキッ☆乙女だらけの三国志演義～ [通常版] |
+|  | SLPM-55288 | 真・恋姫†夢想 ～乙女繚乱☆三国志演義～ [通常版] |
+|  | SLPM-55095 | 神曲奏界ポリフォニカ THE BLACK -EPSODE 1 & 2 BOX EDITION- |
+|  | SLPM-55270 | 神曲奏界ポリフォニカ アフタースクール |
+|  | SLPM-55225 | 戦極姫 ～戦乱に舞う乙女達～ |
+|  | SLPM-55278 | 戦極姫2・炎 ～百華、戦乱辰風の如く～ |
+|  | SLPM-55263 | 花と乙女に祝福を ～春風の贈り物～ |
+|  | SLPM-65682 | Monochrome (モノクローム) |
+|  | SLPS-25051 | Missing Blue [通常版] |
+|  | SLPS-25759 | 四八 （仮） |
+|  | SLPS-25135 | かまいたちの夜2 ～監獄島のわらべ唄～ [通常版] |
+|  | SLPM-66452 | かまいたちの夜x3 三日月島事件の真相 |
+|  | SLPM-55200 | 桃華月憚 ～光風の陵王～ |
+|  | SLPS-25026 | 夏色の砂時計 |
+|  | SLPM-65786 | なついろ ～星屑のメモリー～ |
+|  | SLPM-65355 | 夏色小町【一日千夏】 |
+|  | SLPS-25941 | SDガンダム - G GENERATION WARS |
+|  | SLPM-66458 | 風雨来記 |
+|  | SLPM-66163 | 風雨来記2 |
+|  | SLPM-62207 | SIMPLE2000シリーズ Vol.9 THE 恋愛アドベンチャー ～BITTERSWEET FOOLS～ |
+|  | SLPM-55006 | あかね色に染まる坂 ぱられる |
+|  | SLPS-25581 | SIMPLE 2000シリーズ Vol.92 THE 呪いのゲーム |
+|  | SLPS-20196 | 赤川次郎ミステリー月の光　 ～沈める鐘の殺人～ |
+|  | SLPS-25081 | 最終電車 |
 |  | SLPS-25276 | 夏夢夜話 |
 |  | SLPM-65684 | マイネリーベ 優美なる記憶 |
 |  | SLPM-66247 | マイネリーベⅡ ～誇りと正義と愛～ |
@@ -855,10 +924,10 @@ Vui lòng để trình dịch HOOK trình giả lập trước khi tải trò ch
 |  | SLPS-20352 | 好きなものは好きだからしょうがない！！ -FIRST LIMIT & TARGET†NIGHTS- Sukisho！ Episode ＃01+＃02 |
 |  | SLPS-20394 | 好きなものは好きだからしょうがない！！ -RAIN- Sukisyo！ Episode #03 |
 |  | SLPS-25871 | ドラスティックキラー |
-|  | SLPM-66458 | 風雨来記 |
 |  | SLPS-25679 | うたわれるもの 散りゆく者への子守唄 |
 |  | SLPS-25150 | Only you リベルクルス ドラマCD付き |
 |  | SLPM-66905 | D.C. ～ダ・カーポ～ the Origin |
+|  | SLPM-55156 | D.C.I.F. ～ダ・カーポ～イノセント・フィナーレ～ [通常版] |
 |  | SLPM-66437 | Soul Link EXTENSION |
 |  | SLPM-65396 | デ・ジ・キャラット ファンタジー エクセレント |
 |  | SLPM-66272 | I/O |

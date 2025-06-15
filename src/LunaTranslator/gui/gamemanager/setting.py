@@ -15,6 +15,8 @@ from myutils.config import (
     globalconfig,
     static_data,
 )
+from myutils.wrapper import tryprint
+from myutils.utils import autosql
 from gui.dialog_memory import dialog_memory
 from myutils.localetools import getgamecamptools, maycreatesettings
 from myutils.hwnd import getExeIcon
@@ -88,6 +90,7 @@ def maybehavebutton(self, gameuid, post):
                 save_text_process_info["mypost"],
                 ismypost=True,
             ),
+            fix=False,
         )
     else:
         if post not in postprocessconfig:
@@ -485,6 +488,22 @@ class dialog_setting_game_internal(QWidget):
 
         __launch_method.currentIndexChanged.emit(__launch_method.currentIndex())
 
+    @tryprint
+    def __refresh(self):
+        _filename, _ = os.path.splitext(os.path.basename(uid2gamepath[self.gameuid]))
+        sqlitef = gobject.gettranslationrecorddir(
+            "{}_{}.sqlite".format(_filename, self.gameuid)
+        )
+        if not os.path.exists(sqlitef):
+            return
+        sql = autosql(sqlitef, check_same_thread=False, isolation_level=None)
+        cnt = 0
+        for (_,) in sql.execute("SELECT source FROM artificialtrans").fetchall():
+            cnt += len(_)
+        savehook_new_data[self.gameuid]["statistic_wordcount"] = max(
+            cnt, savehook_new_data[self.gameuid]["statistic_wordcount"]
+        )
+
     def getstatistic(self, formLayout: QVBoxLayout, gameuid):
         chart = chartwidget()
         chart.xtext = lambda x: (
@@ -501,7 +520,16 @@ class dialog_setting_game_internal(QWidget):
         self._timelabel.setSizePolicy(
             QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
         )
-        formLayout.addLayout(getboxlayout(["文字计数", self._wordlabel]))
+        formLayout.addLayout(
+            getboxlayout(
+                [
+                    "文字计数",
+                    getboxlayout(
+                        [self._wordlabel, getIconButton(self.__refresh, "fa.refresh")]
+                    ),
+                ]
+            )
+        )
 
         t = QTimer(self)
         formLayout.addLayout(
@@ -562,7 +590,7 @@ class dialog_setting_game_internal(QWidget):
         return lists
 
     def refresh(self):
-        __ = gobject.baseobject.playtimemanager.querytraceplaytime(self.gameuid)
+        __ = gobject.base.playtimemanager.querytraceplaytime(self.gameuid)
         _cnt = sum([_[1] - _[0] for _ in __])
         self._timelabel.setText(self.formattime(_cnt))
         self._wordlabel.setText(
@@ -620,7 +648,9 @@ class dialog_setting_game_internal(QWidget):
 
         def safeaddtags(_):
             try:
-                gobject.global_dialog_savedgame_new.tagswidget.addTag(*_)
+                from gui.gamemanager.dialog import dialog_savedgame_new
+
+                dialog_savedgame_new.reference.tagswidget.addTag(*_)
             except:
                 NativeUtils.ClipBoard.text = _[0]
                 QToolTip.showText(QCursor.pos(), _TR("已复制到剪贴板"), self)
@@ -661,6 +691,18 @@ class dialog_setting_game_internal(QWidget):
         typecombo = getsimplecombobox(self.tagtypes_zh, default=2)
         combo = FocusCombo()
         combo.setEditable(True)
+        self.fuckcombo = combo
+
+        def closeEventFucker(origin, e):
+            try:
+                combo.setEditable(False)
+            except:
+                pass
+            return origin(e)
+
+        origin = self.window().closeEvent
+        if not isqt5:
+            self.window().closeEvent = functools.partial(closeEventFucker, origin)
 
         def __(idx):
             t = combo.currentText()
@@ -1101,7 +1143,7 @@ class dialog_setting_game_internal(QWidget):
             savehook_new_data[gameuid],
             "embed_follow_default",
             formLayout,
-            callback=lambda: gobject.baseobject.textsource.flashembedsettings(),
+            callback=lambda: gobject.base.textsource.flashembedsettings(),
         )
         formLayout2.addRow(
             "清除游戏内显示的文字",
@@ -1109,7 +1151,7 @@ class dialog_setting_game_internal(QWidget):
                 savehook_new_data[gameuid]["embed_setting_private"],
                 "clearText",
                 default=globalconfig["embedded"]["clearText"],
-                callback=lambda _: gobject.baseobject.textsource.flashembedsettings(),
+                callback=lambda _: gobject.base.textsource.flashembedsettings(),
             ),
         )
 
@@ -1120,7 +1162,7 @@ class dialog_setting_game_internal(QWidget):
                 savehook_new_data[gameuid]["embed_setting_private"],
                 "displaymode",
                 default=globalconfig["embedded"]["displaymode"],
-                callback=lambda _: gobject.baseobject.textsource.flashembedsettings(),
+                callback=lambda _: gobject.base.textsource.flashembedsettings(),
             ),
         )
         formLayout2.addRow(
@@ -1158,7 +1200,7 @@ class dialog_setting_game_internal(QWidget):
                         savehook_new_data[gameuid]["embed_setting_private"],
                         "changefont",
                         default=globalconfig["embedded"]["changefont"],
-                        callback=lambda _: gobject.baseobject.textsource.flashembedsettings(),
+                        callback=lambda _: gobject.base.textsource.flashembedsettings(),
                     ),
                     functools.partial(self.creategamefont_comboBox, gameuid),
                 ]
@@ -1195,7 +1237,7 @@ class dialog_setting_game_internal(QWidget):
                 "changefont_font", x
             )
             try:
-                gobject.baseobject.textsource.flashembedsettings()
+                gobject.base.textsource.flashembedsettings()
             except:
                 pass
 
@@ -1222,8 +1264,8 @@ class dialog_setting_game_internal(QWidget):
                 "insertpchooks_string",
                 callback=lambda _: (
                     (
-                        gobject.baseobject.textsource.InsertPCHooks(0),
-                        gobject.baseobject.textsource.InsertPCHooks(1),
+                        gobject.base.textsource.InsertPCHooks(0),
+                        gobject.base.textsource.InsertPCHooks(1),
                     )
                     if _
                     else None
@@ -1248,7 +1290,7 @@ class dialog_setting_game_internal(QWidget):
             savehook_new_data[gameuid],
             "hooksetting_follow_default",
             settinglayout,
-            lambda: gobject.baseobject.textsource.setsettings(),
+            lambda: gobject.base.textsource.setsettings(),
         )
         formLayout2.addRow(
             "代码页",
@@ -1256,7 +1298,7 @@ class dialog_setting_game_internal(QWidget):
                 static_data["codepage_display"],
                 savehook_new_data[gameuid]["hooksetting_private"],
                 "codepage_value",
-                lambda _: gobject.baseobject.textsource.setsettings(),
+                lambda _: gobject.base.textsource.setsettings(),
                 default=globalconfig["codepage_value"],
                 internal=static_data["codepage_real"],
             ),
@@ -1269,7 +1311,7 @@ class dialog_setting_game_internal(QWidget):
                 10000,
                 savehook_new_data[gameuid]["hooksetting_private"],
                 "textthreaddelay",
-                callback=lambda _: gobject.baseobject.textsource.setsettings(),
+                callback=lambda _: gobject.base.textsource.setsettings(),
                 default=globalconfig["textthreaddelay"],
             ),
         )
@@ -1280,7 +1322,7 @@ class dialog_setting_game_internal(QWidget):
                 1000000,
                 savehook_new_data[gameuid]["hooksetting_private"],
                 "maxBufferSize",
-                callback=lambda _: gobject.baseobject.textsource.setsettings(),
+                callback=lambda _: gobject.base.textsource.setsettings(),
                 default=globalconfig["maxBufferSize"],
             ),
         )
@@ -1291,7 +1333,7 @@ class dialog_setting_game_internal(QWidget):
                 1000000000,
                 savehook_new_data[gameuid]["hooksetting_private"],
                 "maxHistorySize",
-                callback=lambda _: gobject.baseobject.textsource.setsettings(),
+                callback=lambda _: gobject.base.textsource.setsettings(),
                 default=globalconfig["maxHistorySize"],
             ),
         )
@@ -1392,20 +1434,13 @@ class embeddisabler(LDialog):
         self.closecallback(self.changed)
 
 
-def calculate_centered_rect(original_rect: QRect, size: QSize) -> QRect:
-    original_center = original_rect.center()
-    new_left = original_center.x() - size.width() // 2
-    new_top = original_center.y() - size.height() // 2
-    new_rect = QRect(new_left, new_top, size.width(), size.height())
-    return new_rect
-
-
 @Singleton
 class dialog_setting_game(QDialog):
+    reference: "dialog_setting_game" = None
 
     def __init__(self, parent, gameuid, setindexhook=0) -> None:
         super().__init__(parent, Qt.WindowType.WindowCloseButtonHint)
-        gobject.global_dialog_setting_game = self
+        dialog_setting_game.reference = self
 
         self.setWindowTitle(savehook_new_data[gameuid]["title"])
 

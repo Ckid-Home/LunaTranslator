@@ -23,15 +23,13 @@ class mssr(basetext):
         dllp = "C:\\Windows\\SystemApps\\LKG\\MicrosoftWindows.LKG.SpeechRuntime_cw5n1h2txyewy"
         if checkdir(dllp):
             return dllp
-        for _dir, _, __fs in os.walk("."):
-            for _f in __fs:
-                if _f == dll:
-                    return os.path.abspath(_dir)
+        for _dir, _, __ in os.walk("."):
+            if checkdir(_dir):
+                return os.path.abspath(_dir)
 
-        for _dir, _, __fs in os.walk(r"C:\Windows\SystemApps"):
-            for _f in __fs:
-                if _f == dll:
-                    return os.path.abspath(_dir)
+        for _dir, _, __ in os.walk(r"C:\Windows\SystemApps"):
+            if checkdir(_dir):
+                return os.path.abspath(_dir)
 
     def findspeech(self):
         path = globalconfig["sourcestatus2"]["mssr"]["path"]
@@ -74,16 +72,12 @@ class mssr(basetext):
         self.curr = ""
         path = self.findspeech()
         if not path:
-            gobject.baseobject.displayinfomessage(
-                _TR("无可用语言"), "<msg_error_Origin>"
-            )
+            gobject.base.displayinfomessage(_TR("无可用语言"), "<msg_error_Origin>")
             return
 
         dll = self.finddlldirectory()
         if not dll:
-            gobject.baseobject.displayinfomessage(
-                _TR("找不到运行时"), "<msg_error_Origin>"
-            )
+            gobject.base.displayinfomessage(_TR("找不到运行时"), "<msg_error_Origin>")
             return
         print(path, dll)
         pipename = "\\\\.\\Pipe\\" + str(uuid.uuid4())
@@ -109,6 +103,8 @@ class mssr(basetext):
 
     @threader
     def listen(self):
+        punctuationswithoutspace = punctuations.copy()
+        punctuationswithoutspace.remove(" ")
         last = ""
         lastt = 0
         while not self.ending:
@@ -116,6 +112,7 @@ class mssr(basetext):
             if iserr:
                 sz = c_int.from_buffer_copy(windows.ReadFile(self.hPipe, 4)).value
                 text = windows.ReadFile(self.hPipe, sz).decode()
+                gobject.base.displayinfomessage(text, "<msg_error_Origin>")
                 raise Exception(text)
             else:
                 t = c_int.from_buffer_copy(windows.ReadFile(self.hPipe, 4)).value
@@ -141,16 +138,18 @@ class mssr(basetext):
                             thist - lastt
                             > globalconfig["sourcestatus2"]["mssr"]["refreshinterval"]
                         )
-                        or any(_ in punctuations for _ in increased)
+                        or any(_ in punctuationswithoutspace for _ in increased)
                     ):
-                        self.dispatchtext(text)
+                        self.dispatchtext(text, updateTranslate=True)
                         lastt = thist
+                    else:
+                        self.updaterawtext(text)
                 elif t == 4:
-                    gobject.baseobject.displayinfomessage(
+                    gobject.base.displayinfomessage(
                         _TR("正在加载语音识别模型"), "<msg_info_refresh>"
                     )
                 elif t == 1:
-                    gobject.baseobject.displayinfomessage(
+                    gobject.base.displayinfomessage(
                         _TR("加载完毕"), "<msg_info_refresh>"
                     )
                 elif t == 2:

@@ -7,7 +7,7 @@ from sometypes import WordSegResult
 import windows
 from myutils.config import globalconfig
 from gui.usefulwidget import getcolorbutton, getspinbox, limitpos
-from myutils.wrapper import Singleton
+from myutils.wrapper import Singleton, threader
 from gui.dynalang import LDialog, LFormLayout
 from gui.flowsearchword import createsomecontrols
 import NativeUtils
@@ -17,7 +17,7 @@ import NativeUtils
 class tooltipssetting(LDialog):
     def __cb(self, *_):
         tooltipswidget.resetstyle()
-        gobject.baseobject.translation_ui.translate_text.settooltipsstyle(
+        gobject.base.translation_ui.translate_text.settooltipsstyle(
             globalconfig["word_hover_bg_color"],
             globalconfig["word_hover_text_color"],
             globalconfig["word_hover_border"],
@@ -153,7 +153,7 @@ class tooltipswidget(QMainWindow, dataget):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | self.windowFlags())
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         windows.SetWindowLong(
@@ -186,12 +186,13 @@ class tooltipswidget(QMainWindow, dataget):
     def hidetooltipwindow():
         if tooltipswidget.tooltipwindow:
             tooltipswidget.tooltipwindow.hide()
+        gobject.base.WordViewTooltip.Leave()
 
     @staticmethod
     def tracetooltipwindow(word: WordSegResult, pos):
         skip = False
         if globalconfig["usesearchword_S_hover"]:
-            result = gobject.baseobject.checkkeypresssatisfy(
+            result = gobject.base.checkkeypresssatisfy(
                 "searchword_S_hover", False
             )
             result = result == -1 or result == True
@@ -199,30 +200,30 @@ class tooltipswidget(QMainWindow, dataget):
             wordwhich = lambda k: (word.word, word.prototype)[
                 globalconfig["usewordoriginfor"].get(k, False)
             ]
-            gobject.baseobject.settin_ui.hover_search_word.emit(
+            threader(gobject.base.hover_search_word.emit)(
                 wordwhich("searchword_S_hover"),
-                gobject.baseobject.currenttext,
+                gobject.base.currenttext,
                 False,
                 True,
                 result,
             )
         if skip:
             return
-        if gobject.baseobject.settin_ui._WordViewer.isVisible():
+        if gobject.base.WordViewTooltip.isVisible():
             return
         if globalconfig["word_hover_show_word_info"]:
 
             try:
                 if not tooltipswidget.tooltipwindow:
                     tooltipswidget.tooltipwindow = tooltipswidget(
-                        gobject.baseobject.translation_ui.translate_text
+                        gobject.base.translation_ui.translate_text
                     )
                 tips = tooltipswidget.createtipstext(word)
                 if tips:
                     tooltipswidget.tooltipwindow.showtext(
                         tips,
                         pos,
-                        gobject.baseobject.translation_ui.translate_text.width(),
+                        gobject.base.translation_ui.translate_text.width(),
                     )
                 else:
                     tooltipswidget.tooltipwindow.hide()

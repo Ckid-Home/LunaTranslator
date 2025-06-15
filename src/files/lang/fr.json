@@ -754,7 +754,6 @@
     "模型加载失败": "Echec du chargement du modèle",
     "请点击游戏窗口": "Veuillez cliquer sur la fenêtre du jeu",
     "转换Markdown为HTML": "Convertir Markdown en HTML",
-    "可编辑的": "Modifiable",
     "合并临近行": "Fusionner les rangées adjacentes",
     "距离": "distance",
     "翻译前替换": "Substitution avant la traduction",
@@ -810,5 +809,6 @@
     "软件维护不易，如果您感觉该软件对你有帮助，欢迎成为我的[sponsor](https://patreon.com/HIllya51)，您的支持将成为软件长期维护的助力，谢谢~": "La maintenance du logiciel n'est pas facile. Si vous trouvez ce logiciel utile, vous pouvez devenir mon [sponsor](https://patreon.com/HIllya51). Votre soutien contribuera à la maintenance à long terme du logiciel. Merci ~",
     "刷新间隔": "Intervalle de rafraîchissement",
     "找不到运行时": "Impossible de trouver l'exécution",
-    "环回录制": "Enregistrement en boucle"
+    "环回录制": "Enregistrement en boucle",
+    "鼠标离开时关闭": "fermer lorsque la souris quitte"
 }

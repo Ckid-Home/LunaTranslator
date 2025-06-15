@@ -28,21 +28,23 @@ from gui.usefulwidget import (
 
 
 def __create(self):
-    self.selectbutton = getIconButton(
-        gobject.baseobject.createattachprocess,
+    selectbutton = getIconButton(
+        gobject.base.createattachprocess,
         icon=globalconfig["toolbutton"]["buttons"]["selectgame"]["icon"],
         enable=globalconfig["sourcestatus2"]["texthook"]["use"],
     )
-    return self.selectbutton
+    gobject.base.selecthookbuttonstatus.connect(selectbutton.setEnabled)
+    return selectbutton
 
 
 def __create2(self):
-    self.selecthookbutton = getIconButton(
-        lambda: gobject.baseobject.hookselectdialog.showsignal.emit(),
+    selecthookbutton = getIconButton(
+        lambda: gobject.base.hookselectdialog.showsignal.emit(),
         icon=globalconfig["toolbutton"]["buttons"]["selecttext"]["icon"],
         enable=globalconfig["sourcestatus2"]["texthook"]["use"],
     )
-    return self.selecthookbutton
+    gobject.base.selecthookbuttonstatus.connect(selecthookbutton.setEnabled)
+    return selecthookbutton
 
 
 def gethookgrid_em(self):
@@ -52,7 +54,7 @@ def gethookgrid_em(self):
             D_getsimpleswitch(
                 globalconfig["embedded"],
                 "clearText",
-                callback=lambda _: gobject.baseobject.textsource.flashembedsettings(),
+                callback=lambda _: gobject.base.textsource.flashembedsettings(),
             ),
             "",
             "",
@@ -65,7 +67,7 @@ def gethookgrid_em(self):
                 ["翻译", "原文_翻译", "翻译_原文"],
                 globalconfig["embedded"],
                 "displaymode",
-                callback=lambda _: gobject.baseobject.textsource.flashembedsettings(),
+                callback=lambda _: gobject.base.textsource.flashembedsettings(),
             ),
         ],
         [
@@ -78,7 +80,7 @@ def gethookgrid_em(self):
                 "timeout_translate",
                 double=True,
                 step=0.1,
-                callback=lambda x: gobject.baseobject.textsource.flashembedsettings(),
+                callback=lambda x: gobject.base.textsource.flashembedsettings(),
             ),
         ],
         [
@@ -100,7 +102,7 @@ def gethookgrid_em(self):
             D_getsimpleswitch(
                 globalconfig["embedded"],
                 "changefont",
-                callback=lambda _: gobject.baseobject.textsource.flashembedsettings(),
+                callback=lambda _: gobject.base.textsource.flashembedsettings(),
             ),
             creategamefont_comboBox,
         ],
@@ -129,7 +131,7 @@ def gethookgrid(self):
                     static_data["codepage_display"],
                     globalconfig,
                     "codepage_value",
-                    lambda x: gobject.baseobject.textsource.setsettings(),
+                    lambda x: gobject.base.textsource.setsettings(),
                     internal=static_data["codepage_real"],
                 ),
                 2,
@@ -145,7 +147,7 @@ def gethookgrid(self):
                     10000,
                     globalconfig,
                     "textthreaddelay",
-                    callback=lambda x: gobject.baseobject.textsource.setsettings(),
+                    callback=lambda x: gobject.base.textsource.setsettings(),
                 ),
                 2,
             ),
@@ -158,7 +160,7 @@ def gethookgrid(self):
                     1000000,
                     globalconfig,
                     "maxBufferSize",
-                    callback=lambda x: gobject.baseobject.textsource.setsettings(),
+                    callback=lambda x: gobject.base.textsource.setsettings(),
                 ),
                 2,
             ),
@@ -171,7 +173,7 @@ def gethookgrid(self):
                     1000000000,
                     globalconfig,
                     "maxHistorySize",
-                    callback=lambda x: gobject.baseobject.textsource.setsettings(),
+                    callback=lambda x: gobject.base.textsource.setsettings(),
                 ),
                 2,
             ),
@@ -188,7 +190,7 @@ def creategamefont_comboBox():
     def callback(x):
         globalconfig["embedded"].__setitem__("changefont_font", x)
         try:
-            gobject.baseobject.textsource.flashembedsettings()
+            gobject.base.textsource.flashembedsettings()
         except:
             pass
 
@@ -265,12 +267,12 @@ def selectfile(self):
         globalconfig["sourcestatus2"],
         "sourceswitchs",
         "filetrans",
-        gobject.baseobject.starttextsource,
+        gobject.base.starttextsource,
     )
 
     try:
         callback(True)
-        gobject.baseobject.textsource.starttranslatefile(res)
+        gobject.base.textsource.starttranslatefile(res)
     except:
         print_exc()
 
@@ -285,12 +287,16 @@ def createdownloadprogress(self):
         Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
     )
 
-    def __set(_d, text, i):
+    def __set(_d: QProgressBar, text, i):
         _d.setValue(i)
         _d.setFormat(text)
 
-    self.progresssignal2.connect(functools.partial(__set, downloadprogress))
-    self.progresssignal3.connect(lambda x: downloadprogress.setRange(0, x))
+    gobject.base.connectsignal(
+        gobject.base.progresssignal2, functools.partial(__set, downloadprogress)
+    )
+    gobject.base.connectsignal(
+        gobject.base.progresssignal3, lambda x: downloadprogress.setRange(0, x)
+    )
     return downloadprogress
 
 
@@ -346,7 +352,7 @@ def __srcofig(grids: list, self):
         globalconfig["sourcestatus2"]["mssr"],
         "source",
         internal=[0],
-        callback=lambda _: gobject.baseobject.textsource.init(),
+        callback=lambda _: gobject.base.textsource.init(),
     )()
     loadmssrsource(self)
     __w = getboxwidget(
@@ -357,7 +363,7 @@ def __srcofig(grids: list, self):
                 globalconfig["sourcestatus2"]["mssr"],
                 "path",
                 internal=paths,
-                callback=lambda _: gobject.baseobject.textsource.init(),
+                callback=lambda _: gobject.base.textsource.init(),
             ),
             "",
             getsmalllabel("刷新间隔"),
@@ -395,7 +401,7 @@ def __srcofig(grids: list, self):
                         "mssr",
                         lambda _, _2: (
                             loadmssrsource(self),
-                            gobject.baseobject.starttextsource(_, _2),
+                            gobject.base.starttextsource(_, _2),
                             __w.setEnabled(_2),
                         ),
                     ),
@@ -408,8 +414,21 @@ def __srcofig(grids: list, self):
     grids.insert(0, [__])
 
 
-def filetranslate(self):
+class MDLabel2(QLabel):
+    def __init__(self, md):
+        super().__init__()
+        self.setText(md)
+        self.setOpenExternalLinks(False)
+        self.setWordWrap(True)
+        self.linkActivated.connect(self._linkActivated)
 
+    def _linkActivated(self, url: str):
+        link = "http://127.0.0.1:{}{}".format(globalconfig["networktcpport"], url)
+        os.startfile(link)
+
+
+def filetranslate(self):
+    fuckyou = lambda _: '<a href="{}">{}</a>'.format(_, _)
     grids = [
         [
             dict(
@@ -440,7 +459,7 @@ def filetranslate(self):
                                 D_getsimpleswitch(
                                     globalconfig,
                                     "networktcpenable",
-                                    callback=lambda _: gobject.baseobject.serviceinit(),
+                                    callback=lambda _: gobject.base.serviceinit(),
                                 ),
                                 D_getIconButton(
                                     lambda: os.startfile(
@@ -462,28 +481,29 @@ def filetranslate(self):
                                     65535,
                                     globalconfig,
                                     "networktcpport",
-                                    callback=lambda _: gobject.baseobject.serviceinit(),
+                                    callback=lambda _: gobject.base.serviceinit(),
                                 ),
                                 functools.partial(__portconflict, self),
                             ]
                         ),
                     ],
                     [],
-                    [functools.partial(createlabellink, "/")],
                     [
-                        functools.partial(createlabellink, "/page/mainui"),
-                    ],
-                    [
-                        functools.partial(createlabellink, "/page/transhist"),
-                    ],
-                    [
-                        functools.partial(createlabellink, "/page/dictionary"),
-                    ],
-                    [
-                        functools.partial(createlabellink, "/page/translate"),
-                    ],
-                    [
-                        functools.partial(createlabellink, "/page/ocr"),
+                        functools.partial(
+                            MDLabel2,
+                            ("&nbsp;" * 4).join(
+                                fuckyou(_)
+                                for _ in (
+                                    "/",
+                                    "/page/mainui",
+                                    "/page/transhist",
+                                    "/page/dictionary",
+                                    "/page/translate",
+                                    "/page/ocr",
+                                    "/page/tts",
+                                )
+                            ),
+                        )
                     ],
                 ],
             ),
@@ -504,24 +524,9 @@ def getpath():
     return None
 
 
-def open___(url):
-    link = "http://127.0.0.1:{}{}".format(globalconfig["networktcpport"], url)
-    os.startfile(link)
-
-
-def createlabellink(url):
-    l = QLabel('<a href="{}">{}</a>'.format(url, url))
-    l.linkActivated.connect(open___)
-    return l
-
-
 def __portconflict(self):
-
     _ = LLabel()
-    if self.portconflictcache:
-        _.setText(self.portconflictcache[-1])
-    self._ = _
-    self.portconflict.connect(_.setText)
+    gobject.base.connectsignal(gobject.base.portconflict, _.setText)
     return _
 
 
@@ -609,7 +614,7 @@ def setTabOne_lazy(self, basel: QVBoxLayout):
                     globalconfig["sourcestatus2"],
                     "sourceswitchs",
                     key,
-                    gobject.baseobject.starttextsource,
+                    gobject.base.starttextsource,
                 ),
                 pair="sourceswitchs",
             )
@@ -638,3 +643,11 @@ def setTabOne_lazy(self, basel: QVBoxLayout):
     basel.setSpacing(0)
     do()
     dotab()
+
+    def __(k, x):
+        btn: QPushButton = self.sourceswitchs.get(k)
+        if not btn:
+            return
+        btn.setChecked(x)
+
+    gobject.base.sourceswitchs.connect(__)

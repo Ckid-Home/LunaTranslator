@@ -1,9 +1,10 @@
 from qtsymbols import *
 import os, functools, hashlib, json, math, csv, io, pickle
 from traceback import print_exc
-import windows, qtawesome, NativeUtils, gobject, threading
+import windows, qtawesome, NativeUtils, gobject
+from gobject import runtime_for_xp
 from myutils.config import _TR, _TRL, globalconfig, mayberelpath
-from myutils.wrapper import Singleton, threader
+from myutils.wrapper import Singleton, threader, tryprint
 from myutils.utils import nowisdark, checkisusingwine
 from ocrengines.baseocrclass import OCRResult
 from gui.dynalang import (
@@ -144,21 +145,17 @@ class FocusDoubleSpin(QDoubleSpinBox, FocusSpinBase):
     pass
 
 
-class DelayLoadScrollAreaEventFilter(QObject):
-    def eventFilter(_, obj: "DelayLoadScrollArea", event: QEvent):
+class DelayLoadScrollArea(QAbstractScrollArea):
+    def eventFilter(self, obj, event: QEvent):
         if event.type() == QEvent.Type.Resize:
-            obj._updateVisibleArea_1()
+            self._updateVisibleArea_1()
 
         return False
-
-
-class DelayLoadScrollArea(QAbstractScrollArea):
 
     def __init__(self, *a, **k):
         QAbstractScrollArea.__init__(self, *a, **k)
         self.verticalScrollBar().valueChanged.connect(self._updateVisibleArea_1)
-        self.__f = DelayLoadScrollAreaEventFilter(self)
-        self.installEventFilter(self.__f)
+        self.installEventFilter(self)
 
     def _updateVisibleArea_1(self):
         viewport_rect = self.viewport().rect()
@@ -169,7 +166,7 @@ class DelayLoadScrollArea(QAbstractScrollArea):
 
 
 class DelayLoadTableView(QTableView, DelayLoadScrollArea):
-    __delayloadfunction = Qt.ItemDataRole.UserRole + 10
+    __delayloadfunction = Qt.ItemDataRole.UserRole + 100
     __switchwidget = __delayloadfunction + 1
     ValRole = __switchwidget + 1
 
@@ -526,56 +523,67 @@ class TableViewW(DelayLoadTableView):
             self.setindexdata(current, string)
 
 
-def findnearestscreen(rect: QRect):
-    # QScreen ,distance
-    # -1时，是有交集
-    # -2时，是被包围
-    # >=0时，是不在任何屏幕内
-    mindis = 9999999999
-    usescreen = QApplication.primaryScreen()
-    for screen in QApplication.screens():
-        rect1, rect2 = screen.geometry(), rect
-        if rect1.contains(rect2):
-            return screen, -2
-        if rect1.intersects(rect2):
-            r = rect1.intersected(rect2)
-            area = r.width() * r.width()
-            dis = -area
-        else:
-            distances = []
-            distances.append(abs(rect1.right() - rect2.left()))
-            distances.append(abs(rect1.left() - rect2.right()))
-            distances.append(abs(rect1.bottom() - rect2.top()))
-            distances.append(abs(rect1.top() - rect2.bottom()))
-            dis = min(distances)
-        if dis < mindis:
-            mindis = dis
-            usescreen = screen
-    if mindis < 0:
-        mindis = -1
-    return usescreen, mindis
-
-
 class saveposwindow(LMainWindow):
+    screengeochanged = pyqtSignal()
+
     def __init__(self, parent, poslist=None, flags=None) -> None:
+        LMainWindow.__init__(self, parent)
         if flags:
-            LMainWindow.__init__(self, parent, flags=flags)
-        else:
-            LMainWindow.__init__(self, parent)
+            self.setWindowFlags(self.windowFlags() | flags)
 
         self.poslist = poslist
         if self.poslist:
-            usescreen, mindis = findnearestscreen(QRect(poslist[0], poslist[1], 1, 1))
-            poslist[2] = max(0, min(poslist[2], usescreen.size().width()))
-            poslist[3] = max(0, min(poslist[3], usescreen.size().height()))
-            if mindis != -2:
-                poslist[0] = min(
-                    max(poslist[0], 0), usescreen.size().width() - poslist[2]
-                )
-                poslist[1] = min(
-                    max(poslist[1], 0), usescreen.size().height() - poslist[3]
-                )
-            self.setGeometry(*poslist)
+            self.setGeometry(QRect(poslist[0], poslist[1], poslist[2], poslist[3]))
+        self.adjust_window_to_screen_bounds(self.screen().geometry())
+        self.___firstshow = True
+
+    def showEvent(self, a0):
+        if self.___firstshow:
+            self.___firstshow = False
+            self.windowHandle().screenChanged.connect(self.__screenChanged)
+            self.__screenChanged(self.screen())
+        return super().showEvent(a0)
+
+    @tryprint
+    def _changed(self, _id: str, geo: QRect):
+        try:
+            if _id != self.screen().serialNumber():
+                return
+        except:
+            pass
+        self.adjust_window_to_screen_bounds(geo)
+        self.screengeochanged.emit()
+
+    @tryprint
+    def __screenChanged(self, screen: QScreen):
+        screen.geometryChanged.connect(
+            functools.partial(self._changed, screen.serialNumber())
+        )
+
+    @tryprint
+    def adjust_window_to_screen_bounds(self, screen_rect: QRect):
+        window_rect = self.geometry()
+        new_x = window_rect.x()
+        new_y = window_rect.y()
+        new_width = window_rect.width()
+        new_height = window_rect.height()
+
+        if new_width > screen_rect.width():
+            new_width = screen_rect.width()
+        if new_height > screen_rect.height():
+            new_height = screen_rect.height()
+        if new_x + new_width > screen_rect.right() + 1:
+            new_x = screen_rect.right() + 1 - new_width
+        if new_y + new_height > screen_rect.bottom() + 1:
+            new_y = screen_rect.bottom() + 1 - new_height
+        if new_x < screen_rect.left():
+            new_x = screen_rect.left()
+        if new_y < screen_rect.top():
+            new_y = screen_rect.top()
+
+        new_window_rect = QRect(new_x, new_y, new_width, new_height)
+        if new_window_rect != window_rect:
+            self.setGeometry(new_window_rect)
 
     def __checked_savepos(self):
         if not self.poslist:
@@ -1509,9 +1517,7 @@ class SingleExtensionSetting_(saveposwindow):
 def ExtensionSetting(name, settingurl, icon):
     global SingleExtensionSetting
     if not SingleExtensionSetting:
-        SingleExtensionSetting = SingleExtensionSetting_(
-            gobject.baseobject.commonstylebase
-        )
+        SingleExtensionSetting = SingleExtensionSetting_(gobject.base.commonstylebase)
     SingleExtensionSetting.createpage(name, settingurl, icon)
 
 
@@ -1636,6 +1642,7 @@ class Exteditor(LDialog):
                 getIconButton(
                     callback=functools.partial(self.tryMessage, self.removex, _id),
                     icon="fa.times",
+                    fix=False,
                 ),
             )
             t = QTimer(self)
@@ -1670,6 +1677,7 @@ class Exteditor(LDialog):
                         ExtensionSetting, name, setting, info.get("icon")
                     ),
                     enable=self.table.indexWidgetX(i3).isChecked(),
+                    fix=False,
                 ),
             )
         icon = info.get("icon")
@@ -1680,6 +1688,7 @@ class Exteditor(LDialog):
                     qicon=QIcon(icon),
                     callback=functools.partial(os.startfile, info["path"]),
                     enable=self.table.indexWidgetX(i3).isChecked(),
+                    fix=False,
                 ),
             )
         t.stop()
@@ -1770,7 +1779,7 @@ class WebviewWidget(abstractwebview):
     @staticmethod
     def showError(e: Exception):
         QMessageBox.critical(
-            gobject.baseobject.settin_ui,
+            gobject.base.settin_ui,
             _TR("错误"),
             str(e)
             + "\n\n"
@@ -1949,7 +1958,7 @@ class WebviewWidget(abstractwebview):
 
     def __on_load(self, url: str, loadinnew: bool):
         if loadinnew:
-            threading.Thread(target=self.loadextensionwindow.emit, args=(url,)).start()
+            threader(self.loadextensionwindow.emit)(url)
         else:
             self.on_load.emit(url)
             self.url = url
@@ -2359,15 +2368,26 @@ def makelabel(s: str):
     return wid
 
 
-def makeforms(lay: LFormLayout, lis):
-    for line in lis:
+def makeforms(lay: LFormLayout, lis, hiderows=None):
+    for i, line in enumerate(lis):
         if len(line) == 0:
             lay.addRow(QLabel())
             continue
         elif len(line) == 1:
             name, wid = None, line[0]
         else:
-            name, wid = line
+            name, wid = line[0], line[1:]
+            l = QHBoxLayout()
+            for _ in wid:
+                if callable(_):
+                    _ = _()
+                if isinstance(_, str):
+                    l.addWidget(makelabel(_))
+                elif isinstance(_, QWidget):
+                    l.addWidget(_)
+                elif isinstance(_, QLayout):
+                    l.addLayout(_)
+            wid = l
         if isinstance(wid, (tuple, list)):
             hb = QHBoxLayout()
             hb.setContentsMargins(0, 0, 0, 0)
@@ -2408,6 +2428,8 @@ def makeforms(lay: LFormLayout, lis):
             lay.addRow(name, wid)
         else:
             lay.addRow(wid)
+        if i in hiderows if hiderows else []:
+            lay.setRowVisible(i, False)
 
 
 class NQGroupBox(QGroupBox):
@@ -2445,7 +2467,7 @@ def makegroupingrid(args: dict):
     groupname = args.get("name", None)
     enable = args.get("enable", True)
     internallayoutname = args.get("internallayoutname", None)
-
+    hiderows = args.get("hiderows", [])
     if button:
         group = BGroupBox()
         group.setTitle(title)
@@ -2460,15 +2482,14 @@ def makegroupingrid(args: dict):
         group.setEnabled(False)
     if groupname and parent:
         setattr(parent, groupname, group)
-
     if _type == "grid":
         grid = QGridLayout(group)
         automakegrid(grid, lis)
         if internallayoutname:
             setattr(parent, internallayoutname, grid)
     elif _type == "form":
-        lay = LFormLayout(group)
-        makeforms(lay, lis)
+        lay = VisLFormLayout(group)
+        makeforms(lay, lis, hiderows)
         if internallayoutname:
             setattr(parent, internallayoutname, lay)
     return group
@@ -3159,7 +3180,9 @@ class IconButton(LPushButton):
 
     def resizedirect(self):
         h = QFontMetricsF(self.font()).height()
-        sz = (QSizeF(h, h) * gobject.Consts.btnscale).toSize()
+        sz = (
+            QSizeF(int(h * gobject.Consts.IconSizeHW), h) * gobject.Consts.btnscale
+        ).toSize()
         if self.fix:
             self.setFixedSize(sz)
         else:
@@ -3306,7 +3329,7 @@ class VisGridLayout(QGridLayout):
                 super().addWidget(w, r, c, rs, cs)
 
 
-class VisLFormLayout(VisGridLayout):
+class __VisLFormLayout(VisGridLayout):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setAlignment(Qt.AlignmentFlag.AlignTop)
@@ -3347,6 +3370,17 @@ class VisLFormLayout(VisGridLayout):
 
     def addWidget(self, w):
         self.addRow(None, w)
+
+
+if isqt5:
+
+    class VisLFormLayout(__VisLFormLayout):
+        pass
+
+else:
+
+    class VisLFormLayout(LFormLayout):
+        pass
 
 
 class CollapsibleBox(NQGroupBox):
@@ -3516,7 +3550,7 @@ def limitpos(pos: QPoint, w: QWidget, offset: QPoint):
 class PopupWidget(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
-        self.setWindowFlag(Qt.WindowType.Popup)
+        self.setWindowFlags(Qt.WindowType.Popup | self.windowFlags())
         self.dragging = False
         self.offset = None
 
