@@ -860,11 +860,6 @@
             "use": false,
             "name": "edgeTTS"
         },
-        "NeoSpeech": {
-            "use": false,
-            "name": "NeoSpeech",
-            "type": "offline"
-        },
         "tolk": {
             "use": false,
             "name": "Tolk (读屏软件)",

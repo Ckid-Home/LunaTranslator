@@ -1482,19 +1482,19 @@ class llamalisttable(LTableView):
             _arch = arch
             enable = True
             if arch == "sycl":
-                arch += " (Intel GPU/NPU)"
+                arch += " (Intel)"
                 enable = "8086" in xpus
             elif arch.startswith("openvino"):
-                arch += " (Intel GPU/NPU)"
+                arch += " (Intel)"
                 enable = "8086" in xpus
             elif arch.startswith("cuda"):
-                arch += " (Nvidia GPU)"
+                arch += " (Nvidia)"
                 enable = "10DE" in xpus
             elif arch == "hip-radeon":
-                arch += " (AMD GPU/NPU)"
+                arch += " (AMD)"
                 enable = "1022" in xpus
             elif arch.startswith("rocm"):
-                arch += " (AMD GPU/NPU)"
+                arch += " (AMD)"
                 enable = "1022" in xpus
             elif arch == "vulkan":
                 arch += "_(通用)"
