@@ -947,5 +947,7 @@
     "加载中……": "Đang tải……",
     "主页": "Trang chủ",
     "加载失败": "Tải không thành công",
-    "下载中……": "Đang tải xuống..."
+    "下载中……": "Đang tải xuống...",
+    "缩放期间保持屏幕常亮": "Giữ màn hình luôn bật trong suốt quá trình thu phóng",
+    "模拟独占全屏": "Mô phỏng toàn màn hình độc quyền"
 }

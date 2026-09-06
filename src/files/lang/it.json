@@ -947,5 +947,7 @@
     "加载中……": "Caricamento in corso……",
     "主页": "Pagina principale",
     "加载失败": "Caricamento non riuscito",
-    "下载中……": "Scaricamento in corso……"
+    "下载中……": "Scaricamento in corso……",
+    "缩放期间保持屏幕常亮": "Mantenere lo schermo acceso durante lo zoom",
+    "模拟独占全屏": "Simulazione a schermo intero esclusivo"
 }

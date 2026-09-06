@@ -947,5 +947,7 @@
     "加载中……": "Carregando...",
     "主页": "Página inicial",
     "加载失败": "Falha ao carregar",
-    "下载中……": "Baixando..."
+    "下载中……": "Baixando...",
+    "缩放期间保持屏幕常亮": "Manter a tela ligada durante o zoom.",
+    "模拟独占全屏": "Simulação de tela cheia exclusiva"
 }

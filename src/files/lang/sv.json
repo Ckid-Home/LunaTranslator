@@ -947,5 +947,7 @@
     "加载中……": "Laddar...",
     "主页": "Hemsida",
     "加载失败": "Inläsningen misslyckades",
-    "下载中……": "Laddar ner..."
+    "下载中……": "Laddar ner...",
+    "缩放期间保持屏幕常亮": "Håll skärmen vaken under zoomning",
+    "模拟独占全屏": "Simulera exklusiv helskärm"
 }

@@ -947,5 +947,7 @@
     "加载中……": "Wird geladen……",
     "主页": "Startseite",
     "加载失败": "Laden fehlgeschlagen.",
-    "下载中……": "Wird heruntergeladen……"
+    "下载中……": "Wird heruntergeladen……",
+    "缩放期间保持屏幕常亮": "Bildschirm während des Zoomens eingeschaltet lassen",
+    "模拟独占全屏": "Simulierte exklusive Vollbildanzeige"
 }

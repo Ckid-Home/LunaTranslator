@@ -947,5 +947,7 @@
     "加载中……": "Načítání……",
     "主页": "Domovská stránka",
     "加载失败": "Načítání se nezdařilo",
-    "下载中……": "Stahování..."
+    "下载中……": "Stahování...",
+    "缩放期间保持屏幕常亮": "Během přiblížení udržujte obrazovku zapnutou.",
+    "模拟独占全屏": "Simulace exkluzivního celoobrazovkového režimu"
 }

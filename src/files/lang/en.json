@@ -947,5 +947,7 @@
     "加载中……": "Loading...",
     "主页": "Homepage",
     "加载失败": "Loading failed.",
-    "下载中……": "Downloading..."
+    "下载中……": "Downloading...",
+    "缩放期间保持屏幕常亮": "Keep the screen on during zooming.",
+    "模拟独占全屏": "Simulated exclusive fullscreen"
 }

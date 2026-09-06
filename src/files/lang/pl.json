@@ -947,5 +947,7 @@
     "加载中……": "Ładowanie……",
     "主页": "Strona główna",
     "加载失败": "Wczytywanie nie powiodło się",
-    "下载中……": "Pobieranie..."
+    "下载中……": "Pobieranie...",
+    "缩放期间保持屏幕常亮": "Podczas skalowania ekran pozostaje włączony.",
+    "模拟独占全屏": "Symulacja pełnoekranowego trybu wyłącznego"
 }
