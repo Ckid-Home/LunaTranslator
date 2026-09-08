@@ -34,13 +34,18 @@ std::optional<DWORD> TextThread::RunDectectCodePage(BYTE *data, int length)
 		return {};
 	if (hp.detectedCodepage)
 		return {};
-	if (UseForDetectRaw.size() > 32)
-		return {};
 	if (!hp.isAscii())
 		return {};
 	UseForDetectRaw.append((const char *)data, length);
-	if (all_ascii(UseForDetectRaw))
+	if (UseForDetectRaw.size() < 32)
+	{
 		return {};
+	}
+	if (all_ascii(UseForDetectRaw))
+	{
+		UseForDetectRaw.clear();
+		return {};
+	}
 	if (isStringUtf8(UseForDetectRaw))
 	{
 		hp.detectedCodepage = CP_UTF8;
@@ -56,17 +61,18 @@ std::optional<DWORD> TextThread::RunDectectCodePage(BYTE *data, int length)
 		};
 		auto countInRange = [](const std::wstring &ws, wchar_t lo, wchar_t hi)
 		{
-			return (int)std::count_if(ws.begin(), ws.end(), [lo, hi](wchar_t c) { return c >= lo && c <= hi; });
+			return (int)std::count_if(ws.begin(), ws.end(), [lo, hi](wchar_t c)
+									  { return c >= lo && c <= hi; });
 		};
 		auto hasKana = [&](DWORD cp) -> bool
 		{
 			auto ws = decode(cp);
-			return ws && countInRange(*ws, 0x3040, 0x309F) + countInRange(*ws, 0x30A0, 0x30FF) > 1;
+			return ws && ((countInRange(*ws, 0x3040, 0x309F) + countInRange(*ws, 0x30A0, 0x30FF)) >= 2);
 		};
 		auto hasHangul = [&](DWORD cp) -> bool
 		{
 			auto ws = decode(cp);
-			return ws && countInRange(*ws, 0xAC00, 0xD7AF) > 1;
+			return ws && (countInRange(*ws, 0xAC00, 0xD7AF) >= 2);
 		};
 		if (hasKana(932))
 			hp.detectedCodepage = 932;
@@ -78,7 +84,10 @@ std::optional<DWORD> TextThread::RunDectectCodePage(BYTE *data, int length)
 			hp.detectedCodepage = 950;
 	}
 	if (!hp.detectedCodepage)
+	{
+		UseForDetectRaw.clear();
 		return {};
+	}
 	return hp.detectedCodepage;
 }
 void TextThread::Push(BYTE *data, int length)

@@ -35,6 +35,6 @@ constexpr auto LUNA_HOOK_DLL = LUNA_HOOK_DLL_32; // .dll but LoadLibrary automat
 
 extern WORD LUNA_VERSION[4];
 
-struct DECLSPEC_UUID("fa13d4de-7f49-4acc-bfaa-4558a5b799c0") _COMPATIBLE_HELPER;
+struct DECLSPEC_UUID("253bf1be-e941-47d3-ae40-a2c6c88054d6") _COMPATIBLE_HELPER;
 inline const GUID &compatible_sig = __uuidof(_COMPATIBLE_HELPER);
 // EOF

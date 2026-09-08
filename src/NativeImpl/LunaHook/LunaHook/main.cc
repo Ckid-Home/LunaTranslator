@@ -470,7 +470,7 @@ bool NewHook_2(HookParam hp, LPCSTR name, bool silentlyfail = false)
 
 bool NewHook(HookParam hp, LPCSTR name)
 {
-	auto retry = (!(hp.type & BREAK_POINT)) && commonsharedmem->tryvehhook;
+	auto retry = (!(hp.type & BREAK_POINT)) && (!(hp.type & INLINE_HOOK)) && commonsharedmem->tryvehhook;
 	if (NewHook_2(hp, name, retry))
 		return true;
 	if (!retry)

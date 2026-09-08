@@ -65,6 +65,7 @@ namespace
 		case L'B':
 			hp.type |= BREAK_POINT;
 		case L'H':
+			hp.type |= INLINE_HOOK;
 			break;
 		default:
 			return {};
