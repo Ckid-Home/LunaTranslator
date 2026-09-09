@@ -128,6 +128,12 @@ namespace
         s = re::sub(s, "#Ruby\\[[-\\d]+,(.*?)\\]");
         buffer->from(s);
     }
+    void PCSG00401(TextBuffer *buffer, HookParam *hp)
+    {
+        auto s = buffer->strA();
+        s = re::sub(s, R"(\x81\x79(\x81\x40)*(.*?)(\x81\x40)*\x81\x7a)", "\x81\x79$2\x81\x7a");
+        buffer->from(s);
+    }
     void PCSG00766(TextBuffer *buffer, HookParam *hp)
     {
         auto s = buffer->strA();
@@ -1043,6 +1049,8 @@ struct emfuncinfoX
     emfuncinfo info;
 };
 static const emfuncinfoX emfunctionhooks_1[] = {
+    // ソラユメ
+    {0x8000C1C8, {FULL_STRING, 0, 0, 0, PCSG00401, "PCSG00401"}},
     // Princess Arthur
     {0x80065554, {FULL_STRING, 0, 0, 0, PCSG00766, "PCSG00271"}},
     // 冴えない彼女の育てかた -blessing flowers-
