@@ -1,5 +1,5 @@
 
-add_library(host host.cpp textthread.cpp injector.cpp ../include/InfoStrings.cpp)
+add_library(host host.cpp textthread.cpp ../include/InfoStrings.cpp)
 target_compile_definitions(host PRIVATE -DBUILD_HOST=1)
 target_precompile_headers(host REUSE_FROM pch)
 target_include_directories(host PUBLIC .)

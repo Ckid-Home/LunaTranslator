@@ -1840,7 +1840,9 @@ static const emfuncinfoX emfunctionhooks_1[] = {
     // デス・コネクション　ポータブル
     {0x8855594, {FULL_STRING, 0, 0, 0, ULJM05823, "ULJM05823"}},
     // しらつゆの怪
-    {0x888A26C, {0, 0, 0, 0, ULJM06289, "ULJM06289"}},
+    {0x888A26C, {FULL_STRING, 0, 0, 0, ULJM06289, "ULJM06289"}},
+    {0x8919E30, {FULL_STRING, 0, 0, 0, ULJM06289, "ULJM06289"}},
+    {0x8962EA0, {FULL_STRING, 1, 0, 0, ULJM06289, "ULJM06289"}},
     // ダイヤの国のアリス～Wonderful Wonder World～
     {0x8857E3C, {0, 0, 0, 0, 0, "ULJM06216"}},
     // ダイヤの国のアリス～ Wonderful Mirror World ～

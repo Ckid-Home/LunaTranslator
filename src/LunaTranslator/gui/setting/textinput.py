@@ -117,7 +117,7 @@ def gethookgrid_em(dic=None):
                 dic,
                 "changefont",
                 default=False,
-                callback=lambda _: gobject.base.textsource.set_settings_ex(),
+                callback=lambda v: gobject.base.hookselectdialog.on_check_unity_font(),
             ),
             functools.partial(creategamefont_comboBox, dic),
         ],

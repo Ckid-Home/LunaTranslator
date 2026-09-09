@@ -2970,6 +2970,9 @@ struct emfuncinfoX
     emfuncinfo info;
 };
 static const emfuncinfoX emfunctionhooks_1[] = {
+    // The Charming Empire
+    {0x8019030C, {FULL_STRING | CODEC_UTF16, 0, 0x14, 0, F010042300C4F6000_1, 0x010006200949E000ull, "1.0.0"}},
+    {0x8012AA0C, {FULL_STRING | CODEC_UTF16, 0, 0x14, 0, F010042300C4F6000_1, 0x010006200949E000ull, "1.1.0"}},
     // クドわふたー Converted Edition
     {0x8016F7F0, {FULL_STRING | CODEC_UTF16, 8, 0, 0, F010048101D49E000, 0x0100F1B01C94E000ull, "1.0.0"}},
     // The House in Fata Morgana - Dreams of the Revenants Edition

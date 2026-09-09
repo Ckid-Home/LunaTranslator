@@ -202,6 +202,7 @@ namespace Msg
 	definefunction(Warning, HOSTINFO::Warning);
 	definefunction(EmuConnected, HOSTINFO::EmuConnected);
 	definefunction(EmuWarning, HOSTINFO::EmuWarning);
+	definefunction(EngineType, HOSTINFO::EngineType);
 	void EmuGameInfo(const char *id, const char *title, const char *version)
 	{
 		rpc::call<rpc::Id::NotifyEmuGameInfo>(hookPipe, std::string(id), std::string(title), std::string(version ? version : ""));

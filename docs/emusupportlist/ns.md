@@ -1,5 +1,6 @@
 |  | ID       | Game                |
 | ---- | ---------- | ------------------- |
+|  | 010006200949E000 | The Charming Empire |
 |  | 0100F1B01C94E000 | クドわふたー Converted Edition |
 |  | 010016101100A000 | The House in Fata Morgana - Dreams of the Revenants Edition |
 |  | 01006FF014152000 | ハミダシクリエイティブ |

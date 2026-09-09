@@ -378,6 +378,7 @@ void monofunctions::init(HMODULE game_module)
     RESOLVE_IMPORT(mono_string_from_utf16);
     RESOLVE_IMPORT(mono_class_get);
     RESOLVE_IMPORT(mono_string_new_utf16);
+    RESOLVE_IMPORT(mono_object_get_class);
 }
 template <typename T, typename F>
 T get_pointer_in_class(const char *assemblyName, const char *namespaze,

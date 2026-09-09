@@ -10,9 +10,11 @@ from myutils.config import (
     static_data,
     dynamiclink,
 )
+from gui.unityfontdownload import UnityFontDownloadDialog
+from myutils.wrapper import threader
 from myutils.utils import get_time_stamp, is_ascii_control
 from gui.gamemanager.dialog import dialog_setting_game
-from textio.textsource.texthook import texthook, HOSTINFO
+from textio.textsource.texthook import texthook
 from gui.usefulwidget import (
     closeashidewindow,
     getsimplecombobox,
@@ -26,7 +28,6 @@ from gui.usefulwidget import (
     TableViewW,
     create_centered_rect,
 )
-from gui.RichMessageBox import RichMessageBox
 from gui.dynalang import (
     LFormLayout,
     LRadioButton,
@@ -427,10 +428,10 @@ class searchhookparam(LDialog):
 
 class hookselect(closeashidewindow):
     addnewhooksignal = pyqtSignal(tuple, bool, bool)
-    sysmessagesignal = pyqtSignal(int, str)
     removehooksignal = pyqtSignal(tuple)
     getfoundhooksignal = pyqtSignal(dict)
     update_item_new_line = pyqtSignal(tuple, str)
+    consoleoutput  = pyqtSignal(str)
     SaveTextThreadRole = Qt.ItemDataRole.UserRole + 1
 
     @property
@@ -450,13 +451,18 @@ class hookselect(closeashidewindow):
         self.is_focus_normal = True
         self.firsttimex = True
         self.searchhookparam = None
+        self.consoleoutput.connect(self.__consoleoutput)
         self.removehooksignal.connect(self.removehook)
         self.addnewhooksignal.connect(self.addnewhook)
-        self.sysmessagesignal.connect(self.sysmessage)
         self.update_item_new_line.connect(self.update_item_new_line_function)
         self.getfoundhooksignal.connect(self.getfoundhook)
         self.setWindowTitleWithVersion("选择文本")
         self.changeprocessclear()
+
+    def __consoleoutput(self, sentence):
+        self.textbrowappendandmovetoend(
+            self.sysOutput, get_time_stamp() + " " + sentence
+        )
 
     def querykeyofrow(self, row):
         if isinstance(row, QModelIndex):
@@ -561,7 +567,8 @@ class hookselect(closeashidewindow):
 
         self.tttable.setIndexWidget(self.ttCombomodelmodel.index(rown, 0), selectbutton)
         if isembedable:
-            checkbtn = MySwitch(sign=self._check_tp_using(key))
+            embed = self._check_tp_using(key)
+            checkbtn = MySwitch(sign=embed)
 
             checkbtn.clicked.connect(functools.partial(self._embedbtnfn, key))
 
@@ -572,6 +579,8 @@ class hookselect(closeashidewindow):
             if self.embedselectall.get(hc, False):
                 checkbtn.click()
 
+            if embed:
+                self.on_check_unity_font()
         if select and self.tttable.currentIndex() == -1:
             self.tttable.setCurrentIndex(rown)
 
@@ -594,9 +603,38 @@ class hookselect(closeashidewindow):
                 pass
         return _isusing
 
+    def resolve_unity_font_dir(self):
+        ts = self.textsource
+        if ts is None:
+            return
+        if ts.engine.lower() != "unity" or not ts.embedconfig.get("changefont", False):
+            return
+        if self._unityfont_resolving:
+            return
+        self._unityfont_resolving = True
+        try:
+            d = ts.find_unity_font_dir()
+            if not d:
+                dlg = UnityFontDownloadDialog(self)
+                dlg.exec()
+        except:
+            print_exc()
+
+    def on_check_unity_font(self):
+        def __():
+            self.resolve_unity_font_dir()
+            try:
+                self.textsource.set_settings_ex()
+            except:
+                pass
+
+        threader(gobject.base.safeinvokefunction.emit)(__)
+
     def _embedbtnfn(self, key, use):
         hc, hn, tp = key
         self.textsource.Luna_UseEmbed(tp, use)
+        if use:
+            self.on_check_unity_font()
         _use = self._check_tp_using(key)
         if "embedablehook" not in savehook_new_data[gobject.base.gameuid]:
             savehook_new_data[gobject.base.gameuid]["embedablehook"] = []
@@ -733,6 +771,7 @@ class hookselect(closeashidewindow):
         self.tabwidget.addTab(self.textOutput, ("文本"))
         self.tabwidget.addTab(self.sysOutput, ("日志"))
         self.tabwidget.setCurrentIndex(1)
+        self._unityfont_resolving = False
 
     def parse_hook_menu(self, index: QModelIndex):
         _ = self.querykeyofrow(index)
@@ -998,38 +1037,6 @@ class hookselect(closeashidewindow):
         )
         if atBottom:
             scrollbar.setValue(scrollbar.maximum())
-
-    def sysmessage(self, info, sentence):
-        if info == HOSTINFO.Console:
-            self.textbrowappendandmovetoend(
-                self.sysOutput, get_time_stamp() + " " + sentence
-            )
-        elif info in (HOSTINFO.Warning, HOSTINFO.EmuWarning):
-            app = (
-                ""
-                if info == HOSTINFO.Warning
-                else '\n<a href="{}">{}</a>'.format(
-                    dynamiclink("emugames.html", docs=True), _TR("使用说明")
-                )
-            )
-            RichMessageBox(
-                self,
-                _TR("警告"),
-                sentence + app,
-                iserror=False,
-                iswarning=True,
-            )
-        elif info == HOSTINFO.EmuConnected:
-            sentence = _TR(
-                "检测到模拟器: {}\n请在模拟器加载游戏之前，先让翻译器HOOK模拟器，否则将无法识别模拟器内加载的游戏"
-            ).format(sentence)
-            gobject.base.translation_ui.showMarkDownSig.emit(
-                "{}\n[{}]({})".format(
-                    sentence,
-                    _TR("使用说明"),
-                    dynamiclink("emugames.html", docs=True),
-                )
-            )
 
     def getnewsentence(self, sentence):
         self.textbrowappendandmovetoend(self.textOutput, sentence)

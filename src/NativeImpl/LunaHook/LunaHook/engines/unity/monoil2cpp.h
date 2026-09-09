@@ -11,3 +11,10 @@ void* tryfindmonoil2cppType(const char *_dll, const char *_namespace, const char
 void* tryfindmonoil2cppClass(const char *_dll, const char *_namespace, const char *_class, bool strict = false);
 
 void *create_string_csharp(std::wstring_view, void *origin = nullptr);
+
+namespace monoil2cpp
+{
+    void ensure_tmp_font_loaded();
+
+    void apply_font(void *self);
+}

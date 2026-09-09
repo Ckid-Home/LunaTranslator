@@ -1,9 +1,9 @@
 
 
-class mono : public ENGINE
+class Unity : public ENGINE
 {
 public:
-    mono()
+    Unity()
     {
         jittype = JITTYPE::UNITY;
         check_by = CHECK_BY::CUSTOM;

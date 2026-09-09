@@ -1,5 +1,5 @@
-#include "mono.h"
-#include "mono/monocommon.hpp"
+#include "unity.h"
+#include "unity/monocommon.hpp"
 #if 0
 namespace
 {
@@ -130,7 +130,7 @@ bool monodll()
 }
 
 #endif
-bool mono::attach_function_()
+bool Unity::attach_function_()
 {
   return monocommon::hook_mono_il2cpp();
 }

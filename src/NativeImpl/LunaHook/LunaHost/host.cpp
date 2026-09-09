@@ -449,6 +449,7 @@ namespace Host
 		{
 		case HOSTINFO::Console:
 		case HOSTINFO::EmuConnected:
+		case HOSTINFO::EngineType:
 			return;
 		case HOSTINFO::Warning:
 		case HOSTINFO::EmuWarning:

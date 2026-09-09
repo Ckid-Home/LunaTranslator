@@ -397,6 +397,7 @@ def setTab_about(self: QWidget, basel):
                         makelink("k2-fsa/sherpa-onnx"),
                         makelink("chromium/chromium"),
                         makelink("Neargye/magic_enum"),
+                        makelink("bbepis/XUnity.AutoTranslator"),
                     ],
                     "LICENSE",
                 )

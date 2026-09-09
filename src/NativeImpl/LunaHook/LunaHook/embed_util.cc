@@ -140,6 +140,8 @@ void patch_fun_ptrs_patch_once()
 }
 void solvefont(HookParam hp)
 {
+  if (!wcslen(commonsharedmem->fontFamily))
+    return;
   if (hp.embed_hook_font & DISABLE_FONT_SWITCH)
   {
     Hijack::Disable_Font_Switch = true;
@@ -156,7 +158,6 @@ void solvefont(HookParam hp)
   if (auto current_patch_fun = patch_fun.exchange(nullptr))
   {
     current_patch_fun();
-    dont_detach = true;
   }
   patch_fun_ptrs_patch_once();
 }

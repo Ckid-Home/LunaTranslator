@@ -102,7 +102,7 @@ C_LUNA_API void Luna_Settings(int flushDelay, int defaultCodepage, int maxBuffer
     Host::enablePCHooks = enablePCHooks;
     Host::BroadCastCodePage();
 }
-C_LUNA_API void Luna_SettingsEx(DWORD pid, UINT32 waittime, UINT8 fontCharSet, bool fontCharSetEnabled, wchar_t *fontFamily, Displaymode displaymode, bool fastskipignore, bool clearText, bool changeFontSize, float FontSizeRelative, bool tryvehhook)
+C_LUNA_API void Luna_SettingsEx(DWORD pid, UINT32 waittime, UINT8 fontCharSet, bool fontCharSetEnabled, wchar_t *fontFamily, Displaymode displaymode, bool fastskipignore, bool clearText, bool changeFontSize, float FontSizeRelative, bool tryvehhook, const wchar_t *unityfontdir)
 {
     auto sm = Host::GetCommonSharedMem(pid);
     if (!sm)
@@ -116,6 +116,7 @@ C_LUNA_API void Luna_SettingsEx(DWORD pid, UINT32 waittime, UINT8 fontCharSet, b
     sm->clearText = clearText;
     sm->FontSizeRelative = changeFontSize ? FontSizeRelative : 1.;
     sm->tryvehhook = tryvehhook;
+    wcscpy_s(sm->unityfontdir, ARRAYSIZE(sm->unityfontdir), unityfontdir);
 }
 C_LUNA_API void Luna_ResetLang()
 {

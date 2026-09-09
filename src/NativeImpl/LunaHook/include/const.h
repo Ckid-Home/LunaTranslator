@@ -23,6 +23,7 @@ enum class HOSTINFO
   Warning,
   EmuWarning,
   EmuConnected,
+  EngineType,
 };
 #define NEXT_MASK(x)            \
   DUMMY1_##x,                   \

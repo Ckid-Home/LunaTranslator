@@ -40,26 +40,6 @@ namespace
             *split = s;
 #endif
     }
-    std::atomic<bool> usefonthook = false;
-
-    void hook_GetTextElement()
-    {
-        // internal TMP_TextElement GetTextElement(uint unicode, TMP_FontAsset fontAsset, FontStyles fontStyle, FontWeight fontWeight, out bool isUsingAlternativeTypeface)
-        auto addr = tryfindmonoil2cpp("Unity.TextMeshPro", "TMPro", "TMP_Text", "GetTextElement", -1);
-        // public static AssetBundle LoadFromFile(string path)
-        static auto LoadFromFile = tryfindmonoil2cppMethod("UnityEngine.AssetBundleModule", "UnityEngine", "AssetBundle", "LoadFromFile", 1);
-        // public Object[] LoadAllAssets(Type type)
-        static auto LoadAllAssets = tryfindmonoil2cpp("UnityEngine.AssetBundleModule", "UnityEngine", "AssetBundle", "LoadAllAssets", 0);
-        static auto TMP_FontAsset = tryfindmonoil2cppClass("Unity.TextMeshPro", "TMPro", "TMP_FontAsset");
-
-        // auto thread = AutoThread();
-        static auto asset = LR"(.\arialuni_sdf_u2021)";
-        auto assetpath = create_string_csharp(asset);
-        static auto AssetBundle = mono_runtime_invoke((MonoMethod *)LoadFromFile, nullptr, &assetpath, nullptr);
-        static auto assets = mono_runtime_invoke((MonoMethod *)LoadAllAssets, AssetBundle, nullptr, nullptr);
-        // 先存一下。不知道为什么，调用LoadAllAssets就会崩溃。
-    }
-
     void tmpfilter(TextBuffer *buffer, HookParam *)
     {
         auto s = buffer->strW();
@@ -69,15 +49,8 @@ namespace
     }
     void tmpembed(hook_context *context, TextBuffer buffer, HookParam *hp)
     {
-        auto s = buffer.strW();
-        if (auto sw = commonsolvemonostring(context->argof(hp->offset, hp)))
-        {
-            auto origin = std::wstring(sw.value());
-            std::wstring pre = re::match(origin, LR"(((<line-height=[^>]*?>|<sprite anim=[^>]*?>)*)(.*?))").value()[1];
-            std::wstring app = re::match(origin, LR"((.*?)((<line-height=[^>]*?>|<sprite anim=[^>]*?>)*))").value()[2];
-            s = pre + s + app;
-        }
-        buffer.from(s);
+        unity_ui_string_embed_fun(context->argof(hp->offset, hp), buffer);
+        monoil2cpp::apply_font((void *)context->argof_thiscall());
     }
 }
 namespace
@@ -152,6 +125,7 @@ namespace monocommon
         hp.lineSeparator = hook.lineSeparator;
         hp.text_fun = hook.text_fun;
         hp.filter_fun = hook.filter_fun;
+        hp.embed_fun = hook.embed_fun;
         if (hook.isstring)
         {
             hp.type = USING_STRING | CODEC_UTF16 | FULL_STRING;
@@ -229,14 +203,8 @@ namespace monocommon
                 }
                 if (succ)
                 {
-                    if (0)
-                    {
-                        hook_GetTextElement();
-                        patch_fun = []()
-                        {
-                            usefonthook = true;
-                        };
-                    }
+                    patch_fun = []()
+                    { monoil2cpp::ensure_tmp_font_loaded(); };
                     return true;
                 }
             }

@@ -676,6 +676,7 @@ def checkintegrity():
         "Magpie/Magpie.Core.exe" if not runtime_for_xp else None,
         "LunaHook/LunaHook32.dll",
         "LunaHook/LunaHook64.dll",
+        "LunaHook/LunaTmpFontLoader.dll",
     ]
     for f in dllshared:
         if f:
